@@ -42,7 +42,7 @@ Targets found in the Utilities Tracking and Daily Process Report files are used 
 1. Create a new repository on github.com (for example `cbg-production-dashboard`).
 2. Upload everything in this folder, **including the hidden `.github` folder**.
    (On a Mac press Cmd + Shift + . in Finder to see it. GitHub Desktop is the easiest way to upload the whole folder.)
-3. Go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**.
+3. Go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions** (recommended). "Deploy from a branch" (main, / root) also works.
 4. Go to the **Actions** tab, open **Update dashboard** and click **Run workflow**.
 5. When it finishes, the dashboard is at `https://<your-username>.github.io/<repository-name>/`.
 
@@ -59,3 +59,10 @@ npm ci
 node scripts/build-data.js
 npx serve _site
 ```
+
+## Troubleshooting
+
+**"Data could not be loaded (HTTP 404)"**: `data/dashboard-data.json` isn't on the site.
+- Check that `data/dashboard-data.json` exists in the repository. If not, upload it into the `data` folder.
+- Check the **Actions** tab. If there is no "Update dashboard" workflow, the hidden `.github` folder wasn't uploaded: use **Add file → Create new file**, name it `.github/workflows/update-dashboard.yml` and paste in the contents of that file.
+- If a run shows "Permission denied" when saving the data file, go to **Settings → Actions → General → Workflow permissions** and choose **Read and write permissions**.

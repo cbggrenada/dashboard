@@ -105,6 +105,10 @@ fs.copyFileSync(path.join(ROOT, 'index.html'), path.join(OUT, 'index.html'));
 fs.writeFileSync(path.join(OUT, 'data', 'dashboard-data.json'), JSON.stringify(out));
 fs.writeFileSync(path.join(OUT, 'data', 'build-report.txt'), report.join('\n') + '\n');
 fs.writeFileSync(path.join(OUT, '.nojekyll'), '');
+// Also keep a copy in the repository itself, so the site works whether GitHub Pages
+// is set to "GitHub Actions" or to "Deploy from a branch".
+fs.writeFileSync(path.join(ROOT, 'data', 'dashboard-data.json'), JSON.stringify(out));
+fs.writeFileSync(path.join(ROOT, 'data', 'build-report.txt'), report.join('\n') + '\n');
 
 console.log(report.join('\n'));
 console.log(`\n${files.length} files read, ${dayCount} days of data, ${Object.keys(months).length} months.`);
