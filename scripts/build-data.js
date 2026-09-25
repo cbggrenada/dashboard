@@ -48,13 +48,22 @@ for (const file of files) {
     const res = P.parseKnown(wb, path.basename(file));
     if (res) {
       mergeRows(res.rows);
+      for (const [id, v] of Object.entries(res.monthly || {})) {
+        const m = months[id] || (months[id] = { rows: {}, targets: {} });
+        if (v.vol) m.vol = v.vol;
+        if (v.kpi) m.kpi = Object.assign(m.kpi || {}, v.kpi);
+        if (v.targets) Object.assign(m.targets, v.targets);
+      }
       const days = Object.keys(res.rows).sort();
       if (res.type === 'Daily Process Report') {
-        for (const ds of days) mergeTargets(ds.slice(0, 7), { loss: res.rows[ds].plTgt ?? res.targets.loss });
+        for (const ds of days) mergeTargets(ds.slice(0, 7), Object.fromEntries(Object.entries({ loss: res.rows[ds].plTgt ?? res.targets.loss, brew: res.targets.brew }).filter(([, v]) => v != null)));
       } else {
         mergeTargets(res.month || (days.length ? days[days.length - 1].slice(0, 7) : null), res.targets);
       }
-      report.push(`OK    ${name}: ${res.type}, ${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`);
+      const mids = Object.keys(res.monthly || {}).sort();
+      report.push(`OK    ${name}: ${res.type}, ` + (mids.length && !days.length
+        ? `${mids.length} month${mids.length > 1 ? 's' : ''} (${mids[0]} to ${mids[mids.length - 1]})`
+        : `${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`));
       continue;
     }
     // Other files: only PM / maintenance trackers are matched by column name
@@ -91,6 +100,16 @@ if (fs.existsSync(tfile)) {
   catch (e) { report.push(`ERROR data/targets.json: ${e.message}`); problems++; }
 }
 
+// Monthly KPI tables (OEE, FTR) often carry placeholder values for months that haven't happened yet:
+// keep only months up to the latest month that has daily data in that year.
+const lastMonth = {};
+for (const id of Object.keys(months)) if (Object.keys(months[id].rows).length) { const y = id.slice(0, 4); if (!lastMonth[y] || id > lastMonth[y]) lastMonth[y] = id; }
+for (const id of Object.keys(months)) {
+  const m = months[id], y = id.slice(0, 4);
+  if (lastMonth[y] && id > lastMonth[y]) { delete m.kpi; delete m.vol; }
+  if (!Object.keys(m.rows).length && !m.kpi && !m.vol) delete months[id];
+}
+
 const dayCount = Object.values(months).reduce((n, m) => n + Object.keys(m.rows).length, 0);
 const out = {
   generatedAt: new Date().toISOString(),
@@ -105,10 +124,21 @@ fs.copyFileSync(path.join(ROOT, 'index.html'), path.join(OUT, 'index.html'));
 fs.writeFileSync(path.join(OUT, 'data', 'dashboard-data.json'), JSON.stringify(out));
 fs.writeFileSync(path.join(OUT, 'data', 'build-report.txt'), report.join('\n') + '\n');
 fs.writeFileSync(path.join(OUT, '.nojekyll'), '');
+
+// Put a copy of the data inside index.html and in data/dashboard-data.js, so the page also works
+// when it is opened straight from a computer (browsers block reading .json files from disk).
+const json = JSON.stringify(out).replace(/</g, '\\u003c');
+const js = `window.CBG_DATA=${json};\n`;
+const embed = html => html.replace(/\/\*CBG_DATA_START\*\/[\s\S]*?\/\*CBG_DATA_END\*\//, () => `/*CBG_DATA_START*/window.CBG_DATA_EMBED=${json};/*CBG_DATA_END*/`);
+const page = embed(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'));
+fs.writeFileSync(path.join(OUT, 'index.html'), page);
+fs.writeFileSync(path.join(OUT, 'data', 'dashboard-data.js'), js);
 // Also keep a copy in the repository itself, so the site works whether GitHub Pages
 // is set to "GitHub Actions" or to "Deploy from a branch".
 fs.writeFileSync(path.join(ROOT, 'data', 'dashboard-data.json'), JSON.stringify(out));
 fs.writeFileSync(path.join(ROOT, 'data', 'build-report.txt'), report.join('\n') + '\n');
+fs.writeFileSync(path.join(ROOT, 'data', 'dashboard-data.js'), js);
+fs.writeFileSync(path.join(ROOT, 'index.html'), page);
 
 console.log(report.join('\n'));
 console.log(`\n${files.length} files read, ${dayCount} days of data, ${Object.keys(months).length} months.`);

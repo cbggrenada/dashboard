@@ -1,6 +1,6 @@
 # CBG Production Dashboard
 
-A one-page dashboard for Carib Brewery Grenada: production cases, cases per hour, production cases per hour, PM compliance (target 70%), process loss and the four utilities (water, fuel, CO₂, electricity), by YTD, month or date.
+A one-page dashboard for Carib Brewery Grenada: production cases, cases per hour, PM compliance (target 70%), process loss and the four utilities (water, fuel, CO₂, electricity), by YTD, month or date.
 
 It rebuilds itself every time a file is added to `data/raw`, and the **Generate report** button at the top produces a tailored report (Managing Director summary, operations detail, production and process, or utilities) for any year, month, date or date range, ready to print, save as PDF, download or email.
 
@@ -21,10 +21,19 @@ Files it understands automatically:
 
 | File | What it provides |
 |---|---|
-| `Gross_Efficiency_2026.xlsx` | Cases bottled, available time, filling time |
+| `Gross_Efficiency_2026.xlsx` | Cases bottled and available time (cases per hour = cases ÷ available hours) |
 | `<Month>_26_Utilities_Tracking.xlsx` | Electricity, water, fuel, CO₂ and production hl (Utility Analysis sheet), plus targets (Daily KPIs sheet) |
-| `<Month>_26_Daily_Process_Report_2026.xlsx` | Process loss (volume) month to date and year to date |
+| `<Month>_26_Daily_Process_Report_2026.xlsx` | Process Loss (Volume) table: actual, month to date, year to date and target, overall and by brand; brewhouse extract recovery |
+| `<Month>_2026.xls` (monthly process loss file with an MTD sheet) | Backup only: FV and BBT volumes, used for process loss if a month has no Daily Process Report |
+| `CBG_OEE_..._2026.xlsx` | OEE month to date and year to date (Summary sheet) |
+| `FTR_Calculations_2026.xlsx` | FTR month to date and year to date (Summary Report sheet) |
 | Any file with **PM** in its name | PMs planned / completed per date (use `templates/PM_Compliance_Template.xlsx`) |
+
+How the loss measures are worked out:
+
+- **Process loss (volume)** comes from the Process Loss (Volume) table in the Daily Process Report: the overall MTD figure for a month, the overall YTD figure for the year, and the actual for a single date. Target 5.50%.
+- **Brewing loss** is 100 minus brewhouse extract recovery, from the Daily Process Report (month to date, year to date, or the average of that day's brews). Target 2% (100 − 98%).
+- **OEE and FTR** are monthly figures, so they show month to date and year to date only.
 
 Tips:
 
@@ -35,7 +44,7 @@ Tips:
 
 ## Targets
 
-Targets found in the Utilities Tracking and Daily Process Report files are used automatically. To override any of them, edit `data/targets.json` on GitHub (leave `null` to use the file's value). PM compliance is set to 70.
+Targets found in the Utilities Tracking and Daily Process Report files are used automatically. To override any of them, edit `data/targets.json` on GitHub (leave `null` to use the file's value). PM compliance is set to 70 and process loss to 5.50.
 
 ## First-time setup
 

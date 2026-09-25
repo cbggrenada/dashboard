@@ -26,8 +26,11 @@ function readSheet(ws,maxR=600,maxC=160){
   const r=XLSX.utils.decode_range(ws['!ref']);r.e.r=Math.min(r.e.r,r.s.r+maxR);r.e.c=Math.min(r.e.c,maxC);r.s.r=0;r.s.c=0;
   return XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null,blankrows:true,range:r});
 }
-function detectType(wb){
+function detectType(wb,fname=''){
   const names=wb.SheetNames;
+  if(names.some(n=>/^mtd$/i.test(n.trim()))){const a=readSheet(wb.Sheets[names.find(n=>/^mtd$/i.test(n.trim()))],20,10);if(a.some(r=>r&&r.some(c=>/^fv hls$/i.test(txt(c)))))return 'procvol'}
+  if(names.some(n=>/^summary$/i.test(n.trim()))&&(/oee/i.test(fname)||names.some(n=>/utili[sz]ation/i.test(n))))return 'oee';
+  if(names.some(n=>/^summary report$/i.test(n.trim()))&&(/ftr/i.test(fname)||names.some(n=>/^ftr/i.test(n.trim()))))return 'ftr';
   if(names.some(n=>/^utility analysis/i.test(n.trim())))return 'util';
   for(const n of names.slice(0,4)){const a=readSheet(wb.Sheets[n],12,30);if(a.some(r=>r&&r.some(c=>txt(c).toUpperCase()==='DATE')&&r.some(c=>/^CASES/i.test(txt(c)))&&r.some(c=>/^FILL/i.test(txt(c)))))return 'gross'}
   for(const n of names){const a=readSheet(wb.Sheets[n],130,20);if(a.some(r=>r&&r.some(c=>/process loss \(volume\)/i.test(txt(c)))))return 'process'}
@@ -110,32 +113,134 @@ function parseUtil(wb,fname){
 }
 // Daily Process Report workbook: one sheet per report day
 function parseProcess(wb,fname){
-  const rows={},targets={};
+  const rows={},targets={},seenFilt=new Set();
+  const row=ds=>rows[ds]||(rows[ds]={});
   let mo=monthFromText(fname),yr=yearFromText(fname);
   for(const n of wb.SheetNames){
     const m=n.trim().match(/^([A-Za-z]+)\.?\s*(\d{1,2})(st|nd|rd|th)?\b/);if(!m)continue;
     const sm=monthFromText(m[1]);if(sm==null)continue;
-    const a=readSheet(wb.Sheets[n],140,20);
-    let y=yr;if(y==null){const c4=a[3]&&a[3][2];const d=parseDate(c4);if(d)y=+d.slice(0,4)}
+    const a=readSheet(wb.Sheets[n],160,20);
+    let y=yr;if(y==null){const d=parseDate(a[3]&&a[3][2]);if(d)y=+d.slice(0,4)}
     if(y==null)continue;
     if(mo!=null&&sm!==mo)continue;
-    const h=a.findIndex(r=>r&&r.some(c=>/process loss \(volume\)/i.test(txt(c))));if(h<0)continue;
-    const hr=a[h+1]||[];let cm=null,cy=null,ct=null;
-    hr.forEach((c,i)=>{const t=txt(c).toLowerCase();if(t==='mtd'&&cm==null)cm=i;else if(t==='ytd'&&cy==null)cy=i;else if(t==='target'&&ct==null)ct=i});
-    if(cm==null)continue;
-    for(let r=h+2;r<Math.min(h+22,a.length);r++){
-      const row=a[r]||[];if(txt(row[1])!=='')continue;const v=num(row[cm]);if(v==null||v<=0||v>50)continue;
-      const ds=dstr(y,sm,+m[2]);if(!parseDate(ds))break;
-      rows[ds]={plMtd:+v.toFixed(4)};
-      const yv=cy!=null?num(row[cy]):null;if(yv!=null&&yv>0&&yv<50)rows[ds].plYtd=+yv.toFixed(4);
-      const tv=ct!=null?num(row[ct]):null;if(tv!=null&&tv>0){rows[ds].plTgt=tv;targets.loss=tv}
-      break;
+    const ds=dstr(y,sm,+m[2]);if(!parseDate(ds))continue;
+
+    // 1) official process loss (volume) month-to-date / year-to-date for this report day
+    const h=a.findIndex(r=>r&&r.some(c=>/process loss \(volume\)/i.test(txt(c))));
+    if(h>=0){
+      const hr=a[h+1]||[];let ca=null,cm=null,cy=null,ct=null;
+      hr.forEach((c,i)=>{const t=txt(c).toLowerCase();if(t==='actual'&&ca==null)ca=i;else if(t==='mtd'&&cm==null)cm=i;else if(t==='ytd'&&cy==null)cy=i;else if(t==='target'&&ct==null)ct=i});
+      const brands=[],r2=v=>v==null?null:+v.toFixed(3);
+      if(cm!=null)for(let r=h+2;r<Math.min(h+22,a.length);r++){
+        const rw=a[r]||[];
+        if(txt(rw[1])!==''){   // one row per brand: Actual, MTD, YTD, Target
+          const act=ca!=null?num(rw[ca]):null,mtd=num(rw[cm]),ytd=cy!=null?num(rw[cy]):null,tg=ct!=null?num(rw[ct]):null;
+          const ok=v=>v!=null&&v>0&&v<50?v:null;
+          if(ok(act)!=null||ok(mtd)!=null||ok(ytd)!=null)brands.push([txt(rw[1]),r2(ok(act)),r2(ok(mtd)),r2(ok(ytd)),r2(tg)]);
+          continue;
+        }const v=num(rw[cm]);if(v==null||v<=0||v>50)continue;
+        row(ds).plMtd=+v.toFixed(4);
+        const yv=cy!=null?num(rw[cy]):null;if(yv!=null&&yv>0&&yv<50)row(ds).plYtd=+yv.toFixed(4);
+        const tv=ct!=null?num(rw[ct]):null;if(tv!=null&&tv>0){row(ds).plTgt=tv;targets.loss=tv}
+        if(brands.length)row(ds).plBrands=brands;
+        break;
+      }
+    }
+
+    // 2) actual process loss (volume) for each filtration: (FV + GFE - BBT) / (FV + GFE), dated by the filtration date
+    const fh=a.findIndex(r=>r&&r.some(c=>/^filt\.?\s*date$/i.test(txt(c)))&&r.some(c=>/^bbt hls$/i.test(txt(c))));
+    if(fh>=0){
+      const H=a[fh].map(c=>txt(c).toLowerCase());
+      const cB=H.findIndex(t=>t==='brand'),cD=H.findIndex(t=>/^filt\.?\s*date$/.test(t)),cF=H.findIndex(t=>/^fv hls$/.test(t)),
+            cG=H.findIndex(t=>/^gfe/.test(t)),cT=H.findIndex(t=>/^bbt hls$/.test(t));
+      for(let r=fh+1;r<a.length;r++){
+        const rw=a[r]||[];if(rw.some(c=>/process loss \(volume\)/i.test(txt(c))))break;
+        const fd=parseDate(rw[cD]);const fv=num(rw[cF])||0,g=cG>=0?(num(rw[cG])||0):0,bbt=num(rw[cT]);
+        if(!fd||!(fv+g>0)||bbt==null||bbt<=0)continue;
+        if(mo!=null&&+fd.slice(5,7)-1!==mo)continue;   // earlier months' filtrations repeated at the top of a new month's report
+        const key=[txt(rw[cB]).toUpperCase(),fd,fv,g,bbt].join('|');if(seenFilt.has(key))continue;seenFilt.add(key);
+        const t=row(fd);t.plDayFv=+((t.plDayFv||0)+fv+g).toFixed(3);t.plDayBbt=+((t.plDayBbt||0)+bbt).toFixed(3);
+      }
+    }
+
+    // 3) brewhouse extract recovery: brewing loss = 100 - extract recovery
+    const bh=a.findIndex(r=>r&&r.some(c=>/mtd no\.? of brews/i.test(txt(c))));
+    if(bh>=0){
+      const H=a[bh].map(c=>txt(c).toLowerCase()),cn=H.findIndex(t=>/mtd no\.? of brews/.test(t));
+      const after=t=>H.findIndex((x,i)=>i>cn&&x===t),cm=after('mtd'),cy=after('ytd'),ct=after('target');
+      let cb=-1;H.forEach((x,i)=>{if(i<cn&&x==='brand')cb=i});   // the brand column nearest the block (another table sits to its left)
+      if(cm>=0)for(let r=bh+1;r<Math.min(bh+18,a.length);r++){
+        const rw=a[r]||[];if(cb>=0&&txt(rw[cb])!=='')continue;const v=num(rw[cm]);if(v==null||v<50||v>110)continue;
+        row(ds).bwMtd=+v.toFixed(4);
+        const yv=cy>=0?num(rw[cy]):null;if(yv!=null&&yv>50&&yv<=110)row(ds).bwYtd=+yv.toFixed(4);
+        const tv=ct>=0?num(rw[ct]):null;if(tv!=null&&tv>50&&tv<=100){row(ds).bwTgt=tv;targets.brew=+(100-tv).toFixed(3)}
+        break;
+      }
+    }
+    const eh=a.findIndex(r=>r&&r.some(c=>/^extr\.?\s*rec/i.test(txt(c))));
+    if(eh>=0&&eh<40){
+      const ce=a[eh].findIndex(c=>/^extr\.?\s*rec/i.test(txt(c)));let sum=0,k=0;
+      for(let r=eh+1;r<Math.min(eh+30,a.length);r++){const rw=a[r]||[];if(rw.some(c=>/cooling temp|^brand$/i.test(txt(c))))break;
+        const v=num(rw[ce]);if(v!=null&&v>50&&v<=110&&txt(rw[2])!==''){sum+=v;k++}}
+      if(k){row(ds).bwDay=+(sum/k).toFixed(4);row(ds).bwBrews=k}
     }
   }
   return {rows,targets};
 }
+
+/* ---- monthly process loss workbooks (e.g. September_2026.xls): FV and BBT volumes for the month ---- */
+function parseProcVol(wb,fname){
+  const mo=monthFromText(fname),yr=yearFromText(fname);
+  if(mo==null||yr==null)throw new Error('Name the file after its month, e.g. September_2026.xls');
+  const sn=wb.SheetNames.find(n=>/^mtd$/i.test(n.trim()));const a=readSheet(wb.Sheets[sn],60,12);
+  const h=a.findIndex(r=>r&&r.some(c=>/^fv hls$/i.test(txt(c))));const H=a[h].map(c=>txt(c).toLowerCase());
+  const cF=H.findIndex(t=>t==='fv hls'),cB=H.findIndex(t=>t==='bbt hls');
+  for(let r=h+1;r<a.length;r++){const rw=a[r]||[];if(rw.some(c=>/^total$/i.test(txt(c)))){
+    const fv=num(rw[cF]),bbt=num(rw[cB]);if(fv==null||bbt==null)break;
+    return {rows:{},targets:{},monthly:{[dstr(yr,mo,1).slice(0,7)]:{vol:{fv:+fv.toFixed(3),bbt:+bbt.toFixed(3)}}}};}}
+  throw new Error('Could not find the Total row on the MTD sheet.');
+}
+/* ---- month-by-month KPI tables (OEE summary, FTR summary report) ---- */
+function monthCols(rw){const m={};(rw||[]).forEach((c,i)=>{const t=txt(c);if(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(t)){const k=monthFromText(t);if(m[k]==null)m[k]=i}});return m}
+function pctRow(rw,cols){
+  const raw={};for(const k in cols){const v=num(rw[cols[k]]);if(v!=null)raw[k]=v}
+  const vals=Object.values(raw).sort((x,y)=>x-y);if(!vals.length)return {};
+  const asFrac=vals[Math.floor(vals.length/2)]<=1.5,out={};
+  for(const k in raw){const p=asFrac?(raw[k]<=1.5?raw[k]*100:null):raw[k];if(p!=null&&p>0&&p<=100)out[k]=+p.toFixed(3)}
+  return out;
+}
+function kpiTable(a,label,fname,key){
+  const yr=yearFromText(fname);if(yr==null)throw new Error('Put the year in the file name, e.g. ..._2026.xlsx');
+  const lab=r=>(a[r]||[]).slice(0,4).map(txt).map(t=>t.toLowerCase());
+  const mr=a.findIndex((r,i)=>lab(i).includes('mtd')&&lab(i+1).includes('ytd'));
+  if(mr<0)throw new Error(`Could not find the MTD / YTD rows for ${label}.`);
+  let hr=-1;for(let i=mr-1;i>=0&&i>=mr-12;i--){if(Object.keys(monthCols(a[i])).length>=6){hr=i;break}}
+  if(hr<0)throw new Error(`Could not find the month headings for ${label}.`);
+  const cols=monthCols(a[hr]),mtd=pctRow(a[mr],cols),ytd=pctRow(a[mr+1],cols);
+  let target=null;
+  const tc=(a[hr]||[]).findIndex(c=>/^target$/i.test(txt(c)));
+  if(tc>=0){const v=num(a[mr][tc]);if(v!=null)target=v<=1.5?v*100:v}
+  if(target==null){for(let r=mr+2;r<mr+5&&r<a.length;r++){if(lab(r).includes('target')){const v=(a[r]||[]).map(num).find((x,i)=>x!=null&&i>0);if(v!=null)target=v<=1.5?v*100:v}}}
+  const monthly={};
+  for(let m=0;m<12;m++){if(mtd[m]==null&&ytd[m]==null)continue;const id=dstr(yr,m,1).slice(0,7);
+    monthly[id]={kpi:{[key+'Mtd']:mtd[m]??null,[key+'Ytd']:ytd[m]??(m===0?mtd[m]:null)}};
+    if(target!=null)monthly[id].targets={[key]:+target.toFixed(3)}}
+  return {rows:{},targets:target!=null?{[key]:target}:{},monthly};
+}
+function parseOEE(wb,fname){
+  const sn=wb.SheetNames.find(n=>/^summary$/i.test(n.trim()));const a=readSheet(wb.Sheets[sn],80,30);
+  const top=a.findIndex(r=>r&&r.slice(0,4).some(c=>/^oee$/i.test(txt(c))));
+  return kpiTable(top>=0?a.slice(top):a,'OEE',fname,'oee');
+}
+function parseFTR(wb,fname){
+  const sn=wb.SheetNames.find(n=>/^summary report$/i.test(n.trim()));const a=readSheet(wb.Sheets[sn],200,30);
+  return kpiTable(a,'FTR',fname,'ftr');
+}
 function parseKnown(wb,fname){
-  const t=detectType(wb);
+  const t=detectType(wb,fname);
+  if(t==='procvol')return {type:'Monthly process loss (volume)',...parseProcVol(wb,fname)};
+  if(t==='oee')return {type:'OEE summary',...parseOEE(wb,fname)};
+  if(t==='ftr')return {type:'FTR summary',...parseFTR(wb,fname)};
   if(t==='gross')return {type:'Gross Efficiency',...parseGross(wb)};
   if(t==='util')return {type:'Utilities Tracking',...parseUtil(wb,fname)};
   if(t==='process')return {type:'Daily Process Report',...parseProcess(wb,fname)};
