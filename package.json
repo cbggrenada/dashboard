@@ -1,0 +1,11 @@
+{
+  "name": "cbg-production-dashboard",
+  "private": true,
+  "description": "CBG production dashboard, rebuilt from the raw Excel files in data/raw",
+  "scripts": {
+    "build": "node scripts/build-data.js"
+  },
+  "dependencies": {
+    "xlsx": "0.18.5"
+  }
+}
