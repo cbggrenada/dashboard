@@ -31,7 +31,8 @@ Files it understands automatically:
 
 How the loss measures are worked out:
 
-- **Process loss (volume)** comes from the Process Loss (Volume) table in the Daily Process Report: the overall MTD figure for a month, the overall YTD figure for the year, and the actual for a single date. Target 5.50%.
+- **Process loss (volume)** comes from the Process Loss (Volume) table in the Daily Process Report: the overall MTD figure for a month, the overall YTD figure for the year, and on a single date the month to date as at that day's report. Target 5.50%.
+- **Process loss actual** is (FV + GFE − BBT) ÷ (FV + GFE) for the filtrations in the period, from the same report (for a single date it matches the table's Actual column).
 - **Brewing loss** is 100 minus brewhouse extract recovery, from the Daily Process Report (month to date, year to date, or the average of that day's brews). Target 2% (100 − 98%).
 - **OEE and FTR** are monthly figures, so they show month to date and year to date only.
 
