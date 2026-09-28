@@ -22,6 +22,7 @@ OK    April_2026.xls: Monthly process loss (volume), 1 month (2026-04 to 2026-04
 OK    August_2026.xls: Monthly process loss (volume), 1 month (2026-08 to 2026-08)
 OK    CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: OEE summary, 9 months (2026-01 to 2026-09)
 OK    February_2026.xls: Monthly process loss (volume), 1 month (2026-02 to 2026-02)
+WARN  Finished PM Compliance.xlsx: could not find a Date column plus PM planned / completed / compliance columns
 SKIP  FTR Manufacturing 2026.xlsx: not a Gross Efficiency, Utilities Tracking, Daily Process Report or PM file
 OK    FTR_Calculations_2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
 OK    January_2026.xls: Monthly process loss (volume), 1 month (2026-01 to 2026-01)
