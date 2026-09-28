@@ -76,3 +76,12 @@ npx serve _site
 - Check that `data/dashboard-data.json` exists in the repository. If not, upload it into the `data` folder.
 - Check the **Actions** tab. If there is no "Update dashboard" workflow, the hidden `.github` folder wasn't uploaded: use **Add file → Create new file**, name it `.github/workflows/update-dashboard.yml` and paste in the contents of that file.
 - If a run shows "Permission denied" when saving the data file, go to **Settings → Actions → General → Workflow permissions** and choose **Read and write permissions**.
+
+## Adding new data (short version)
+
+Upload the new or updated files into **data/raw** and commit. That's all: the **Update dashboard** workflow reads every file, rebuilds the data and republishes the site in 1–2 minutes.
+
+- File names don't need to match exactly. The dashboard recognises each file by what's inside it (Gross Efficiency, Utilities Tracking, Daily Process Report, monthly process loss .xls, OEE, FTR, PM compliance).
+- If two files cover the same month (for example a renamed copy), the one with the newest data is used.
+- **PM compliance** comes from the PM workbook (one sheet per month, e.g. "Sept PM"), using its "% COMPLETION" figure. Add each new month as a new sheet and re-upload the workbook.
+- **Brews per day** comes from the Daily Brewing Plan block in the Daily Process Report (average brews per day, MTD / YTD / target).

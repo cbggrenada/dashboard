@@ -38,37 +38,22 @@ function mergeTargets(id, t) {
 }
 
 // Gross Efficiency first (whole year), then the monthly files, then anything else (e.g. PM)
-const order = f => /gross/i.test(f) ? 0 : /utilit/i.test(f) ? 1 : /process/i.test(f) ? 2 : 3;
-const files = listFiles(RAW).sort((a, b) => order(path.basename(a)) - order(path.basename(b)) || a.localeCompare(b));
-
+// 1) read every file
+const files = listFiles(RAW);
+const parsed = [];
 for (const file of files) {
   const name = path.relative(RAW, file);
   try {
     const wb = P.XLSX.read(fs.readFileSync(file), { type: 'buffer', cellDates: true });
     const res = P.parseKnown(wb, path.basename(file));
     if (res) {
-      mergeRows(res.rows);
-      for (const [id, v] of Object.entries(res.monthly || {})) {
-        const m = months[id] || (months[id] = { rows: {}, targets: {} });
-        if (v.vol) m.vol = v.vol;
-        if (v.kpi) m.kpi = Object.assign(m.kpi || {}, v.kpi);
-        if (v.targets) Object.assign(m.targets, v.targets);
-      }
-      const days = Object.keys(res.rows).sort();
-      if (res.type === 'Daily Process Report') {
-        for (const ds of days) mergeTargets(ds.slice(0, 7), Object.fromEntries(Object.entries({ loss: res.rows[ds].plTgt ?? res.targets.loss, brew: res.targets.brew }).filter(([, v]) => v != null)));
-      } else {
-        mergeTargets(res.month || (days.length ? days[days.length - 1].slice(0, 7) : null), res.targets);
-      }
-      const mids = Object.keys(res.monthly || {}).sort();
-      report.push(`OK    ${name}: ${res.type}, ` + (mids.length && !days.length
-        ? `${mids.length} month${mids.length > 1 ? 's' : ''} (${mids[0]} to ${mids[mids.length - 1]})`
-        : `${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`));
+      const days = Object.keys(res.rows).sort(), mids = Object.keys(res.monthly || {}).sort();
+      parsed.push({ name, res, days, mids, last: days[days.length - 1] || (mids.length ? mids[mids.length - 1] + '-31' : '') });
       continue;
     }
-    // Other files: only PM / maintenance trackers are matched by column name
+    // Other files: only PM / maintenance trackers laid out one row per date are matched by column name
     if (!/pm|maint/i.test(path.basename(file))) {
-      report.push(`SKIP  ${name}: not a Gross Efficiency, Utilities Tracking, Daily Process Report or PM file`);
+      report.push(`SKIP  ${name}: not a file type the dashboard reads`);
       continue;
     }
     let best = null;
@@ -78,18 +63,40 @@ for (const file of files) {
     }
     const pmCols = best ? ['pmPlanned', 'pmDone', 'pmPct'].filter(k => best.map[k] != null) : [];
     if (!best || !pmCols.length) {
-      report.push(`WARN  ${name}: could not find a Date column plus PM planned / completed / compliance columns`);
+      report.push(`WARN  ${name}: could not find PM compliance figures in this file`);
       problems++;
       continue;
     }
-    const rows = P.buildGeneric(best);
-    mergeRows(rows);
-    const days = Object.keys(rows).sort();
-    report.push(`OK    ${name}: PM data from sheet "${best.name}" (${pmCols.map(k => best.headers[best.map[k]]).join(', ')}), ${days.length} days`);
+    const rows = P.buildGeneric(best), days = Object.keys(rows).sort();
+    parsed.push({ name, res: { type: 'PM data', rows, targets: {} }, days, mids: [], last: days[days.length - 1] || '' });
   } catch (e) {
     report.push(`ERROR ${name}: ${e.message}`);
     problems++;
   }
+}
+
+// 2) merge. Files of the same type are applied oldest data first, so when two files cover the
+//    same month (for example a renamed copy of a report) the one with the newest data wins.
+const rank = t => ['Gross Efficiency', 'Utilities Tracking', 'Daily Process Report', 'Monthly process loss (volume)'].indexOf(t);
+parsed.sort((x, y) => rank(x.res.type) - rank(y.res.type) || x.last.localeCompare(y.last) || x.name.localeCompare(y.name));
+for (const { name, res, days, mids } of parsed) {
+  mergeRows(res.rows);
+  for (const [id, v] of Object.entries(res.monthly || {})) {
+    const m = months[id] || (months[id] = { rows: {}, targets: {} });
+    if (v.vol) m.vol = v.vol;
+    if (v.kpi) m.kpi = Object.assign(m.kpi || {}, v.kpi);
+    if (v.targets) Object.assign(m.targets, v.targets);
+  }
+  if (res.type === 'Daily Process Report') {
+    for (const ds of days) mergeTargets(ds.slice(0, 7), Object.fromEntries(Object.entries({
+      loss: res.rows[ds].plTgt ?? res.targets.loss, brew: res.targets.brew, bpd: res.rows[ds].bpdTgt ?? res.targets.bpd,
+    }).filter(([, v]) => v != null)));
+  } else {
+    mergeTargets(res.month || (days.length ? days[days.length - 1].slice(0, 7) : null), res.targets);
+  }
+  report.push(`OK    ${name}: ${res.type}, ` + (mids.length && !days.length
+    ? `${mids.length} month${mids.length > 1 ? 's' : ''} (${mids[0]} to ${mids[mids.length - 1]})`
+    : `${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`));
 }
 
 // Optional target overrides kept in the repo (blank = use the targets found in the files)

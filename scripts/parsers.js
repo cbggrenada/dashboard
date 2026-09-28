@@ -28,6 +28,7 @@ function readSheet(ws,maxR=600,maxC=160){
 }
 function detectType(wb,fname=''){
   const names=wb.SheetNames;
+  for(const n of names.slice(0,24)){const a=readSheet(wb.Sheets[n],40,30);if(a.some(r=>r&&r.some(c=>/%\s*completion/i.test(txt(c))))&&a.some(r=>r&&r.some(c=>/pm'?s\s*planned|^equipment$/i.test(txt(c)))))return 'pm'}
   if(names.some(n=>/^mtd$/i.test(n.trim()))){const a=readSheet(wb.Sheets[names.find(n=>/^mtd$/i.test(n.trim()))],20,10);if(a.some(r=>r&&r.some(c=>/^fv hls$/i.test(txt(c)))))return 'procvol'}
   if(names.some(n=>/^summary$/i.test(n.trim()))&&(/oee/i.test(fname)||names.some(n=>/utili[sz]ation/i.test(n))))return 'oee';
   if(names.some(n=>/^summary report$/i.test(n.trim()))&&(/ftr/i.test(fname)||names.some(n=>/^ftr/i.test(n.trim()))))return 'ftr';
@@ -172,8 +173,22 @@ function parseProcess(wb,fname){
       if(cm>=0)for(let r=bh+1;r<Math.min(bh+18,a.length);r++){
         const rw=a[r]||[];if(cb>=0&&txt(rw[cb])!=='')continue;const v=num(rw[cm]);if(v==null||v<50||v>110)continue;
         row(ds).bwMtd=+v.toFixed(4);
+        const nb=num(rw[cn]);if(nb!=null&&nb>=0)row(ds).brewsMtd=nb;
         const yv=cy>=0?num(rw[cy]):null;if(yv!=null&&yv>50&&yv<=110)row(ds).bwYtd=+yv.toFixed(4);
         const tv=ct>=0?num(rw[ct]):null;if(tv!=null&&tv>50&&tv<=100){row(ds).bwTgt=tv;targets.brew=+(100-tv).toFixed(3)}
+        break;
+      }
+    }
+    // 4) Daily Brewing Plan: average brews per day MTD / YTD / target
+    const ph=a.findIndex(r=>r&&r.some(c=>/average brews per day/i.test(txt(c))));
+    if(ph>=0){
+      for(let r=ph;r<Math.min(ph+4,a.length);r++){
+        const rw=a[r]||[],cm=rw.findIndex(c=>txt(c).toLowerCase()==='mtd');if(cm<0)continue;
+        const cy=rw.findIndex((c,i)=>i>cm&&txt(c).toLowerCase()==='ytd'),ct=rw.findIndex((c,i)=>i>cm&&txt(c).toLowerCase()==='target');
+        const nx=a[r+1]||[],m=num(nx[cm]),y=cy>=0?num(nx[cy]):null,t=ct>=0?num(nx[ct]):null;
+        if(m!=null&&m>=0&&m<50)row(ds).bpdMtd=+m.toFixed(4);
+        if(y!=null&&y>=0&&y<50)row(ds).bpdYtd=+y.toFixed(4);
+        if(t!=null&&t>0&&t<50){row(ds).bpdTgt=t;targets.bpd=t}
         break;
       }
     }
@@ -236,8 +251,35 @@ function parseFTR(wb,fname){
   const sn=wb.SheetNames.find(n=>/^summary report$/i.test(n.trim()));const a=readSheet(wb.Sheets[sn],200,30);
   return kpiTable(a,'FTR',fname,'ftr');
 }
+const MON3=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function parsePM(wb,fname){
+  const found=[];
+  for(const n of wb.SheetNames){
+    const a=readSheet(wb.Sheets[n],80,40);
+    const pr=a.findIndex(r=>r&&r.some(c=>/%\s*completion/i.test(txt(c))));if(pr<0)continue;
+    const hr=a.findIndex(r=>r&&r.some(c=>txt(c)==='%'));
+    let pc=hr>=0?a[hr].findIndex(c=>txt(c)==='%'):-1;
+    let v=pc>=0?num(a[pr][pc]):null;
+    if(v==null){const vals=(a[pr]||[]).map(num).filter(x=>x!=null);v=vals.length?vals[vals.length-1]:null}
+    if(v==null)continue;if(v<=1.5)v*=100;if(v<0||v>100)continue;
+    // month from the sheet name (e.g. "Aug PM"), else the date under the title; year from that date, else the file name
+    let mo=monthFromText(n),yr=null,d=null;
+    for(let r=0;r<4&&!d;r++)for(const c of (a[r]||[])){const x=parseDate(c);if(x){d=x;break}}
+    if(d){yr=+d.slice(0,4);if(mo==null)mo=+d.slice(5,7)-1}
+    if(yr==null)yr=yearFromText(n)||yearFromText(fname);
+    if(mo==null||yr==null)continue;
+    found.push({id:dstr(yr,mo,1).slice(0,7),v:+v.toFixed(3)});
+  }
+  if(!found.length)throw new Error('Could not find a "% COMPLETION" row with a month on any sheet.');
+  found.sort((x,y)=>x.id.localeCompare(y.id));
+  const monthly={},acc={};
+  for(const f of found){const y=f.id.slice(0,4),s=acc[y]||(acc[y]={t:0,n:0});s.t+=f.v;s.n++;
+    monthly[f.id]={kpi:{pmMtd:f.v,pmYtd:+(s.t/s.n).toFixed(3)}}}
+  return {rows:{},targets:{},monthly};
+}
 function parseKnown(wb,fname){
   const t=detectType(wb,fname);
+  if(t==='pm')return {type:'PM compliance',...parsePM(wb,fname)};
   if(t==='procvol')return {type:'Monthly process loss (volume)',...parseProcVol(wb,fname)};
   if(t==='oee')return {type:'OEE summary',...parseOEE(wb,fname)};
   if(t==='ftr')return {type:'FTR summary',...parseFTR(wb,fname)};
