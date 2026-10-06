@@ -1,7 +1,6 @@
 OK    CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: OEE summary, 9 months (2026-01 to 2026-09)
 OK    Finished PM Compliance.xlsx: PM compliance, 2 months (2026-08 to 2026-09)
 OK    FTR Calculations 2026.xlsx: FTR summary, 11 months (2026-01 to 2026-12)
-OK    FTR_Calculations_2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
 OK    Gross_Efficiency_2026.xlsx: Gross Efficiency, 177 days (2026-01-02 to 2026-10-05)
 OK    January_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-01-01 to 2026-01-31)
 OK    February_26_Utilities_Tracking.xlsx: Utilities Tracking, 28 days (2026-02-01 to 2026-02-28)
@@ -34,4 +33,5 @@ OK    July_2026.xls: Monthly process loss (volume), 1 month (2026-07 to 2026-07)
 OK    August_2026.xls: Monthly process loss (volume), 1 month (2026-08 to 2026-08)
 OK    September_2026.xls: Monthly process loss (volume), 1 month (2026-09 to 2026-09)
 OK    October_2026.xls: Monthly process loss (volume), 1 month (2026-10 to 2026-10)
+NOTE  FTR Calculations 2026.xlsx: no FTR figure for 2026-10 yet (the month's overall FTR cell is empty or shows an error), so the dashboard shows FTR up to 2026-09.
 NOTE  CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: no OEE figure for 2026-10 yet (the month's overall OEE cell is empty or shows an error), so the dashboard shows OEE up to 2026-09.
