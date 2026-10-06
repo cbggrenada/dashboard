@@ -1,3 +1,4 @@
+OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 7 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09); its figures replace the calculated ones for those months
 OK    PM_Compliance_Jan-Aug_2026.xlsx: PM compliance, 8 months (2026-01 to 2026-08)
 OK    CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: OEE summary, 9 months (2026-01 to 2026-09)
 OK    Finished PM Compliance.xlsx: PM compliance, 2 months (2026-08 to 2026-09)
