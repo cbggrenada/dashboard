@@ -83,5 +83,7 @@ Upload the new or updated files into **data/raw** and commit. That's all: the **
 
 - File names don't need to match exactly. The dashboard recognises each file by what's inside it (Gross Efficiency, Utilities Tracking, Daily Process Report, monthly process loss .xls, OEE, FTR, PM compliance).
 - If two files cover the same month (for example a renamed copy), the one with the newest data is used.
+- **Ops KPIs MD report** (`Ops_KPIs_2026_MD_Report_new_format.xlsx`, one sheet per month such as "New MD September 26") holds the official, corrected monthly figures. For every month it covers, its numbers replace the calculated ones: production cases, cases per hour, brews per day, brewing loss (100 − extract recovery), process loss, utilities, OEE, FTR and PM compliance, and its budgets become the targets. The year to date uses its YTD column, with any later months added on. Add each new month's sheet to the workbook and upload it again under the same name. Single days are still calculated from the daily files.
+- **Production cases** = cases bottled + kegs from the Gross Efficiency workbook (1 keg = 2.75 cases). Cases per hour uses cases bottled only.
 - **PM compliance** comes from the PM workbook (one sheet per month, e.g. "Sept PM"), using its "% COMPLETION" figure. Add each new month as a new sheet and re-upload the workbook.
 - **Brews per day** comes from the Daily Brewing Plan block in the Daily Process Report (average brews per day, MTD / YTD / target).

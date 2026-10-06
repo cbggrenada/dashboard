@@ -606,6 +606,26 @@ function agg(recs,raw,kind){
     else if(fullYTD&&last[k+'Ytd']!=null)o[k]=last[k+'Ytd'];
     else{const v=kp.map(x=>x[k+'Mtd']).filter(x=>x!=null);o[k]=v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
   }
+  // Ops KPIs MD report: its official figures replace the calculated ones for a whole month, and for the year to date
+  // (months after the latest report are added on: cases are summed, utilities are weighted by production hl)
+  if(!days){
+    const MDK={cases:'cases',cph:'cph',bpd:'bpd',loss:'loss',water:'water',fuel:'fuel',elec:'elec',co2:'co2',oee:'oee',ftr:'ftr',pm:'pm'};
+    const md=id=>MONTHS_DATA[id]&&MONTHS_DATA[id].md;
+    const put=(rec,f)=>{if(!rec)return;for(const [mk,ok] of Object.entries(MDK)){const v=rec[mk]&&rec[mk][f];if(v!=null)o[ok]=v}
+      const er=rec.er&&rec.er[f];if(er!=null)o.brew=100-er};
+    if(ms.length===1&&md(ms[0])){put(md(ms[0]),'a');for(const k of ['oee','ftr','pm'])if(md(ms[0])[k]&&md(ms[0])[k].ya!=null)o[k+'Ytd']=md(ms[0])[k].ya;o.official='month'}
+    else if(fullYTD){
+      const L=[...ms].reverse().find(id=>md(id));
+      if(L===ms[ms.length-1]){put(md(L),'ya');o.official='ytd'}
+      else if(L){
+        const rec=md(L),after=recs.filter(r=>`${r.y}-${pad(r.m+1)}`>L),upto=recs.filter(r=>`${r.y}-${pad(r.m+1)}`<=L);
+        if(rec.cases&&rec.cases.ya!=null)o.cases=rec.cases.ya+after.reduce((t,r)=>t+(r.cases||0)+(r.kegCases||0),0);
+        for(const u of UT){const y=rec[u]&&rec[u].ya;if(y==null)continue;const hl0=upto.reduce((t,r)=>t+(r[u]!=null?r.utilHl||0:0),0);
+          let c1=0,h1=0;for(const r of after)if(r[u]!=null){c1+=r[u];h1+=r.utilHl||0}
+          o[u]=hl0+h1>0?(y*hl0+c1)/(hl0+h1):y}
+        o.official='part';o.officialTo=L}
+    }
+  }
   return o;
 }
 
@@ -1162,7 +1182,7 @@ function rptBuild(o){
   }
   if(sec.includes('notes')&&o.notes&&o.notes.trim())h+=`<h2>Notes</h2><div class="notes">${E(o.notes.trim())}</div>`;
   const files=(INFO&&INFO.files)||[];
-  h+=`<div class="foot">Source: CBG Gross Efficiency, Utilities Tracking, Daily Process Report, monthly process loss, OEE and FTR workbooks${files.length?` (${files.length} files)`:''}. Production cases = cases bottled + kegs (1 keg = 2.75 cases); cases per hour = cases bottled ÷ available hours; utilities = total usage ÷ production hl; process loss = Daily Process Report, Process Loss (Volume); brewing loss = 100 − brewhouse extract recovery. </div></div>`;
+  h+=`<div class="foot">Source: CBG Gross Efficiency, Utilities Tracking, Daily Process Report, monthly process loss, OEE and FTR workbooks${files.length?` (${files.length} files)`:''}. Where the Ops KPIs MD report covers a month, its official figures are used for that month and for the year to date. Production cases = cases bottled + kegs (1 keg = 2.75 cases); cases per hour = cases bottled ÷ available hours; utilities = total usage ÷ production hl; process loss = Daily Process Report, Process Loss (Volume); brewing loss = 100 − brewhouse extract recovery. </div></div>`;
   // plain-text version for email / clipboard
   const lines=[`${title}: ${P.label}`,''];
   if(txt.summary.length){lines.push('Summary');txt.summary.forEach(s=>lines.push('- '+s));lines.push('')}
