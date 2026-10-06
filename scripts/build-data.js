@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const P = require('./parsers');
+const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const RAW = path.join(ROOT, 'data', 'raw');
@@ -18,6 +19,15 @@ function listFiles(dir) {
     if (e.isDirectory()) return listFiles(p);
     return /\.(xlsx|xlsm|xls|csv)$/i.test(e.name) && !e.name.startsWith('~$') ? [p] : [];
   }).sort();
+}
+
+// When each file was last uploaded (its last commit), so the newest upload wins. Falls back to the file's date.
+function uploadedAt(file) {
+  try {
+    const t = execFileSync('git', ['log', '-1', '--format=%ct', '--', path.relative(ROOT, file)], { cwd: ROOT, encoding: 'utf8' }).trim();
+    if (t) return +t * 1000;
+  } catch (e) { /* not a git checkout */ }
+  return fs.statSync(file).mtimeMs;
 }
 
 const months = {};      // "2026-09" -> { rows: { "2026-09-01": {...} }, targets: {...} }
@@ -48,7 +58,7 @@ for (const file of files) {
     const res = P.parseKnown(wb, path.basename(file));
     if (res) {
       const days = Object.keys(res.rows).sort(), mids = Object.keys(res.monthly || {}).sort();
-      parsed.push({ name, res, days, mids, last: days[days.length - 1] || (mids.length ? mids[mids.length - 1] + '-31' : '') });
+      parsed.push({ name, res, days, mids, time: uploadedAt(file), last: days[days.length - 1] || (mids.length ? mids[mids.length - 1] + '-31' : '') });
       continue;
     }
     // Other files: only PM / maintenance trackers laid out one row per date are matched by column name
@@ -68,7 +78,7 @@ for (const file of files) {
       continue;
     }
     const rows = P.buildGeneric(best), days = Object.keys(rows).sort();
-    parsed.push({ name, res: { type: 'PM data', rows, targets: {} }, days, mids: [], last: days[days.length - 1] || '' });
+    parsed.push({ name, res: { type: 'PM data', rows, targets: {} }, days, mids: [], time: uploadedAt(file), last: days[days.length - 1] || '' });
   } catch (e) {
     report.push(`ERROR ${name}: ${e.message}`);
     problems++;
@@ -78,8 +88,19 @@ for (const file of files) {
 // 2) merge. Files of the same type are applied oldest data first, so when two files cover the
 //    same month (for example a renamed copy of a report) the one with the newest data wins.
 const rank = t => ['Gross Efficiency', 'Utilities Tracking', 'Daily Process Report', 'Monthly process loss (volume)'].indexOf(t);
-parsed.sort((x, y) => rank(x.res.type) - rank(y.res.type) || x.last.localeCompare(y.last) || x.name.localeCompare(y.name));
-for (const { name, res, days, mids } of parsed) {
+parsed.sort((x, y) => rank(x.res.type) - rank(y.res.type) || x.last.localeCompare(y.last) || x.time - y.time || x.name.localeCompare(y.name));
+// Month-by-month KPI workbooks (FTR, OEE, PM compliance) are kept up to date in one file for the whole year,
+// so only the most recently uploaded copy for each year is read. An older copy (for example the same
+// workbook saved under a slightly different name) is skipped, because its later months are often
+// unfinished or placeholder figures.
+const KPI_TYPES = ['FTR summary', 'OEE summary', 'PM compliance'];
+const yearsOf = x => [...new Set(x.mids.map(m => m.slice(0, 4)))];
+for (const x of parsed.filter(x => KPI_TYPES.includes(x.res.type) && x.mids.length && !x.days.length)) {
+  const newer = parsed.find(y => y !== x && y.res.type === x.res.type && y.mids.length && !y.days.length && y.time > x.time && yearsOf(y).some(v => yearsOf(x).includes(v)));
+  if (newer) { x.skip = true; report.push(`SKIP  ${x.name}: older copy of ${newer.name} (uploaded ${new Date(x.time).toISOString().slice(0, 10)}); only the newest upload is read. Delete it from data/raw to tidy up.`); }
+}
+for (const { name, res, days, mids, skip } of parsed) {
+  if (skip) continue;
   mergeRows(res.rows);
   for (const [id, v] of Object.entries(res.monthly || {})) {
     const m = months[id] || (months[id] = { rows: {}, targets: {} });
@@ -115,6 +136,19 @@ for (const id of Object.keys(months)) {
   const m = months[id], y = id.slice(0, 4);
   if (lastMonth[y] && id > lastMonth[y]) { delete m.kpi; delete m.vol; }
   if (!Object.keys(m.rows).length && !m.kpi && !m.vol) delete months[id];
+}
+
+// Say so when the latest month with daily data has no FTR / OEE figure yet (the cell is blank or shows an error such as #DIV/0!)
+for (const [key, label, type] of [['ftrMtd', 'FTR', 'FTR summary'], ['oeeMtd', 'OEE', 'OEE summary']]) {
+  const src = parsed.filter(x => x.res.type === type && !x.skip);
+  if (!src.length) continue;
+  for (const id of Object.values(lastMonth)) {
+    const k = months[id] && months[id].kpi;
+    if (!k || k[key] == null) {
+      const prev = Object.keys(months).filter(m => m < id && months[m].kpi && months[m].kpi[key] != null).sort().pop();
+      report.push(`NOTE  ${src.map(x => x.name).join(', ')}: no ${label} figure for ${id} yet (the month's overall ${label} cell is empty or shows an error), so the dashboard shows ${label} up to ${prev || 'the last month that has one'}.`);
+    }
+  }
 }
 
 const dayCount = Object.values(months).reduce((n, m) => n + Object.keys(m.rows).length, 0);
