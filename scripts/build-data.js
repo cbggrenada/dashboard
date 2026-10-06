@@ -89,11 +89,13 @@ for (const file of files) {
 //    same month (for example a renamed copy of a report) the one with the newest data wins.
 const rank = t => ['Gross Efficiency', 'Utilities Tracking', 'Daily Process Report', 'Monthly process loss (volume)'].indexOf(t);
 parsed.sort((x, y) => rank(x.res.type) - rank(y.res.type) || x.last.localeCompare(y.last) || x.time - y.time || x.name.localeCompare(y.name));
-// Month-by-month KPI workbooks (FTR, OEE, PM compliance) are kept up to date in one file for the whole year,
+// Month-by-month KPI workbooks (FTR, OEE) are kept up to date in one file for the whole year,
 // so only the most recently uploaded copy for each year is read. An older copy (for example the same
 // workbook saved under a slightly different name) is skipped, because its later months are often
 // unfinished or placeholder figures.
-const KPI_TYPES = ['FTR summary', 'OEE summary', 'PM compliance'];
+const KPI_TYPES = ['FTR summary', 'OEE summary'];
+// PM compliance files hold one sheet per month, so several can be uploaded side by side (for example the
+// maintenance team's workbook and a file of earlier months); each month is taken from the latest file covering it.
 const yearsOf = x => [...new Set(x.mids.map(m => m.slice(0, 4)))];
 for (const x of parsed.filter(x => KPI_TYPES.includes(x.res.type) && x.mids.length && !x.days.length)) {
   const newer = parsed.find(y => y !== x && y.res.type === x.res.type && y.mids.length && !y.days.length && y.time > x.time && yearsOf(y).some(v => yearsOf(x).includes(v)));
@@ -136,6 +138,17 @@ for (const id of Object.keys(months)) {
   const m = months[id], y = id.slice(0, 4);
   if (lastMonth[y] && id > lastMonth[y]) { delete m.kpi; delete m.vol; }
   if (!Object.keys(m.rows).length && !m.kpi && !m.vol) delete months[id];
+}
+
+// PM compliance year to date: the average of the monthly figures from January, as the SCTCM reports calculate it,
+// worked out across all PM files (a single file may only hold the last few months)
+{
+  const byYear = {};
+  for (const id of Object.keys(months).sort()) {
+    const k = months[id].kpi; if (!k || k.pmMtd == null) continue;
+    const s = byYear[id.slice(0, 4)] || (byYear[id.slice(0, 4)] = { t: 0, n: 0 });
+    s.t += k.pmMtd; s.n++; k.pmYtd = +(s.t / s.n).toFixed(3);
+  }
 }
 
 // Say so when the latest month with daily data has no FTR / OEE figure yet (the cell is blank or shows an error such as #DIV/0!)
