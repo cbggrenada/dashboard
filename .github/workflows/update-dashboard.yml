@@ -65,3 +65,5 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+             fetch-depth: 0
