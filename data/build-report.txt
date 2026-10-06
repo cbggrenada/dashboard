@@ -1,4 +1,3 @@
-SKIP  FTR Manufacturing 2026.xlsx: not a file type the dashboard reads
 OK    CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: OEE summary, 9 months (2026-01 to 2026-09)
 OK    Finished PM Compliance.xlsx: PM compliance, 2 months (2026-08 to 2026-09)
 OK    FTR Calculations 2026.xlsx: FTR summary, 11 months (2026-01 to 2026-12)
