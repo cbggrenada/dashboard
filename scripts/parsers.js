@@ -38,6 +38,7 @@ function detectType(wb,fname=''){
   return 'generic';
 }
 // Gross Efficiency workbook: one sheet per month, one row per product run
+const KEG_CASES=2.75;   // cases per keg
 function parseGross(wb){
   const out={};
   for(const n of wb.SheetNames){
@@ -52,7 +53,8 @@ function parseGross(wb){
       else if(C.fill==null&&/^FILL/.test(c))C.fill=i;
       else if(C.cases==null&&/^CASES( BOTTLED)?$/.test(c))C.cases=i;
       else if(C.bbt==null&&/^BBT/.test(c))C.bbt=i;
-      else if(C.bottled==null&&/^BOTTLED HLS/.test(c))C.bottled=i;}
+      else if(C.bottled==null&&/^BOTTLED HLS/.test(c))C.bottled=i;
+      else if(C.kegs==null&&/^KEGS$/.test(c))C.kegs=i;}
     // some months leave the "AVAIL." heading blank: it is the TIME column just before FILL
     if(C.avail==null&&C.fill>0&&/^TIME$/.test(comb(C.fill-1)))C.avail=C.fill-1;
     if(C.date==null||C.cases==null)continue;
@@ -62,12 +64,15 @@ function parseGross(wb){
       // keep rows for the sheet's own month; fix a mistyped year (e.g. 2005 typed for 2026)
       if(sm!=null&&+ds.slice(5,7)-1!==sm)continue;
       if(sy!=null&&+ds.slice(0,4)!==sy){const fx=parseDate(`${sy}-${ds.slice(5)}`);if(!fx)continue;ds=fx}
-      const rec=out[ds]||(out[ds]={cases:0,availMin:0,fillMin:0,bbtHl:0,bottledHl:0});
+      const rec=out[ds]||(out[ds]={cases:0,availMin:0,fillMin:0,bbtHl:0,bottledHl:0,kegs:0});
       const add=(k,c)=>{if(c==null)return;const v=num(row[c]);if(v!=null)rec[k]+=v};
-      add('cases',C.cases);add('availMin',C.avail);add('fillMin',C.fill);add('bbtHl',C.bbt);add('bottledHl',C.bottled);
+      add('cases',C.cases);add('availMin',C.avail);add('fillMin',C.fill);add('bbtHl',C.bbt);add('bottledHl',C.bottled);add('kegs',C.kegs);
     }
   }
-  for(const ds in out){const r=out[ds];for(const k in r)r[k]=+r[k].toFixed(4);if(!Object.values(r).some(v=>v))delete out[ds]}
+  // kegs count towards production cases: 1 keg = 2.75 cases (the conversion the Gross Efficiency sheets use for "KEGS - TOTAL CASES")
+  for(const ds in out){const r=out[ds];for(const k in r)r[k]=+r[k].toFixed(4);
+    if(r.kegs)r.kegCases=+(r.kegs*KEG_CASES).toFixed(2);else delete r.kegs;
+    if(!Object.values(r).some(v=>v))delete out[ds]}
   return {rows:out,targets:{}};
 }
 // Utilities Tracking workbook: "Utility Analysis <Month> <Year>" has one row per day of the month
