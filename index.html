@@ -551,11 +551,12 @@ function flagAnomalies(){
 /* ============ aggregation ============ */
 function agg(recs,raw,kind){
   const sk=(r,m)=>!raw&&S.excl&&r._an&&r._an[m];
-  let lastBP=null,brewsT=0,nbr=0,cases=0,nc=0,ca=0,av=0,cf=0,fi=0,pd=0,pp=0,ps=0,pn=0,lastPL=null,lastBW=null,bs=0,bn=0;
+  let lastBP=null,brewsT=0,nbr=0,cases=0,nc=0,kc=0,kg=0,ca=0,av=0,cf=0,fi=0,pd=0,pp=0,ps=0,pn=0,lastPL=null,lastBW=null,bs=0,bn=0;
   const U={};UT.forEach(u=>U[u]={c:0,v:0});
   const dm={};   // actual filtration volumes by month, used when a month's volume file isn't loaded
   for(const r of recs){
-    if(r.cases!=null){cases+=r.cases;nc++}
+    // production cases = cases bottled + kegs converted to cases; cases per hour stays on bottled cases
+    if(r.cases!=null||r.kegCases){cases+=(r.cases||0)+(r.kegCases||0);kc+=r.kegCases||0;kg+=r.kegs||0;nc++}
     if(r.cases!=null&&r.availMin>0&&!sk(r,'cph')){ca+=r.cases;av+=r.availMin}
     if(r.cases!=null&&r.fillMin>0&&!sk(r,'pcph')){cf+=r.cases;fi+=r.fillMin}
     if(r.pmPlanned>0&&r.pmDone!=null){pd+=r.pmDone;pp+=r.pmPlanned}else if(r.pmPct!=null){ps+=r.pmPct;pn++}
@@ -567,7 +568,7 @@ function agg(recs,raw,kind){
     if(r.bpdMtd!=null)lastBP=r;if(r.brewsDay!=null){brewsT+=r.brewsDay;nbr++}
   }
   const ms=[...new Set(recs.map(r=>`${r.y}-${pad(r.m+1)}`))].sort();
-  const o={cases:nc?cases:null,cph:av?ca/(av/60):null,pcph:fi?cf/(fi/60):null,pm:pp?pd/pp*100:pn?ps/pn:null};
+  const o={kegCases:kc,kegs:kg,cases:nc?cases:null,cph:av?ca/(av/60):null,pcph:fi?cf/(fi/60):null,pm:pp?pd/pp*100:pn?ps/pn:null};
   UT.forEach(u=>o[u]=U[u].v>0?U[u].c/U[u].v:null);
   // figures the reports give as month-to-date / year-to-date: use the last record of each selected month,
   // the report's year-to-date figure when the selection is a whole year to date, otherwise combine the months
@@ -678,7 +679,7 @@ const col=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim
 
 /* ============ render ============ */
 const KPI={
-  cases:{l:'Production cases',dp:0,up:true,unit:'',f:'Cases bottled'},
+  cases:{l:'Production cases',dp:0,up:true,unit:'',f:'Cases bottled + kegs (1 keg = 2.75 cases)'},
   cph:{l:'Cases per hour',dp:0,up:true,unit:'',f:'Cases ÷ available hours'},
   pm:{l:'PM compliance',dp:1,up:true,unit:'%',pct:true,f:'PMs completed ÷ planned'},
   bpd:{l:'Brews per day',dp:2,up:true,unit:'',f:'Average brews per day'},
@@ -707,6 +708,7 @@ function tile(k,a,p){
   if(k==='cases'){
     let plan=null;if(S.mode==='month'){const ps=S.months.map(id=>{const d=MONTHS_DATA[id];return d&&d.targets?d.targets.cases:null});if(ps.every(x=>x))plan=ps.reduce((a,b)=>a+b,0)}
     if(plan){const pc=v/plan*100;tline=`<div class="ts">${nf(pc,1)}% of ${S.months.length>1?'combined':'monthly'} plan (${nf(plan)})</div>`}else tline='';
+    if(a.kegCases)tline+=`<div class="ts">Includes ${nf(a.kegCases)} cases from ${nf(a.kegs)} kegs</div>`;
   }else if(t!=null){const d=v-t,good=K.up?d>=0:d<=0;cls=good?'good':'bad';
     tline=`<div class="ts ${cls}">Target ${K.up?'≥':'≤'} ${nf(+t,K.dp)}${u==='%'?'%':u?' '+u:''}, ${d>=0?'+':'−'}${nf(Math.abs(d),K.dp)}${K.pct?' pts':''}</div>`}
   let cmp='';
@@ -754,7 +756,7 @@ function render(){
   <div class="tiles">${UT.map(k=>tile(k,a,p)).join('')}</div>
   <div class="sec">Trends ${G?'by month':'by day'}</div>
   <div class="grid">
-    <section class="panel s8"><h2>Production cases and cases per hour</h2><p class="hint">Bars show cases bottled, the line shows cases per hour (cases ÷ available hours).</p><div class="cv"><canvas id="ch_prod"></canvas></div></section>
+    <section class="panel s8"><h2>Production cases and cases per hour</h2><p class="hint">Bars show production cases (bottles plus kegs), the line shows cases per hour (cases bottled ÷ available hours).</p><div class="cv"><canvas id="ch_prod"></canvas></div></section>
     <section class="panel s4"><h2>Brews per day</h2><p class="hint">${G?'Average per brewing day, each month':'Brews on each report day'}${target('bpd')!=null?`, target ${nf(+target('bpd'),1)}`:''}</p><div class="cv"><canvas id="ch_bpd"></canvas></div></section>
     <section class="panel s4"><h2>OEE by month</h2><p class="hint">Bars month to date, line year to date${target('oee')!=null?`, target ${nf(+target('oee'),1)}%`:''}</p><div class="cv sm"><canvas id="ch_oee"></canvas></div></section>
     <section class="panel s4"><h2>FTR by month</h2><p class="hint">Bars month to date, line year to date${target('ftr')!=null?`, target ${nf(+target('ftr'),1)}%`:''}</p><div class="cv sm"><canvas id="ch_ftr"></canvas></div></section>
@@ -781,7 +783,7 @@ function renderHero(a,p){
   const prodDays=recs.filter(r=>r.cases>0).length,filt=recs.reduce((t,r)=>t+(r.plDayFv||0),0),hlPk=recs.reduce((t,r)=>t+(r.bottledHl||0),0);
   const facts=[];
   if(S.mode==='date'&&recs.length===1){const r=recs[0],d=new Date(r.y,r.m,r.d);facts.push(DAYS[d.getDay()]);
-    if(r.cases!=null)facts.push(`${nf(r.cases)} cases bottled`);if(r.brewsDay)facts.push(`${r.brewsDay} brew${r.brewsDay>1?'s':''}`);if(r.plDayFv)facts.push(`${nf(r.plDayFv)} hl filtered`)}
+    if(r.cases!=null)facts.push(`${nf(r.cases)} cases bottled`);if(r.kegs)facts.push(`${nf(r.kegs)} kegs`);if(r.brewsDay)facts.push(`${r.brewsDay} brew${r.brewsDay>1?'s':''}`);if(r.plDayFv)facts.push(`${nf(r.plDayFv)} hl filtered`)}
   else{facts.push(`${prodDays} production day${prodDays===1?'':'s'}`);if(a.brews)facts.push(`${nf(a.brews)} brews`);if(hlPk)facts.push(`${nf(hlPk)} hl packaged`);if(filt)facts.push(`${nf(filt)} hl filtered`);
     if(PER.grain==='month'){const ms=new Set(recs.map(mid)).size;facts.push(`${ms} month${ms>1?'s':''}`)}}
   if(pr)facts.push(`compared with ${pr.label}`);
@@ -850,7 +852,7 @@ function drawCharts(g){
   const title=it=>PER.series[it[0].dataIndex]?.title||'';
   const pr=i=>i===hlIdx()?6:2.5;
   mk('ch_prod',{data:{labels:L,datasets:[
-      {type:'bar',label:'Cases bottled',data:g.map(x=>x.a.cases),backgroundColor:g.map((_,i)=>shade(navy,i)),yAxisID:'y',order:3,maxBarThickness:48},
+      {type:'bar',label:'Production cases',data:g.map(x=>x.a.cases),backgroundColor:g.map((_,i)=>shade(navy,i)),yAxisID:'y',order:3,maxBarThickness:48},
       {type:'line',label:'Cases per hour',data:g.map(x=>x.a.cph),borderColor:amber,backgroundColor:amber,pointRadius:g.map((_,i)=>pr(i)),borderWidth:2,tension:.25,yAxisID:'y1',order:1,spanGaps:true}]},
     options:opts({plugins:{legend:{display:true,position:'top',align:'end',labels:{boxWidth:10,boxHeight:10}},tooltip:{callbacks:{title,label:lab(0)}}},
       scales:{x:{grid:{display:false},ticks:{maxRotation:0}},y:{beginAtZero:true,grid:{color:col('--line')},border:{display:false},title:{display:true,text:'Cases'}},
@@ -953,7 +955,7 @@ function rptPeriod(o){
     let plan=0,act=0,n=0;const ms=new Map();P.recs.forEach(r=>{const k=`${r.y}-${r.m}`;if(!ms.has(k))ms.set(k,[]);ms.get(k).push(r)});
     for(const [k,rs] of ms){const [y,m]=k.split('-').map(Number);const last=rs[rs.length-1].d,first=rs[0].d;
       const full=first<=3&&last>=new Date(y,m+1,0).getDate()-3;const p=monthDoc(y,m)?.targets?.cases;
-      if(full&&p){plan+=p;act+=rs.reduce((s,r)=>s+(r.cases||0),0);n++}}
+      if(full&&p){plan+=p;act+=rs.reduce((s,r)=>s+(r.cases||0)+(r.kegCases||0),0);n++}}
     if(n)P.planFull={plan,act,n};
   }
   return P;
@@ -978,7 +980,7 @@ function rptText(P,met){
     return s.good?`, within the ${rFmt(k,t)} target`:`, ${gap} ${KPI[k].up?'below':'above'} the ${rFmt(k,t)} target`};
   // headline summary
   if(has('cases')&&a.cases!=null){
-    let s=`${nf(a.cases)} cases bottled${cmpPhrase('cases')}`;
+    let s=`${nf(a.cases)} production cases${a.kegCases?` (including ${nf(a.kegCases)} cases from ${nf(a.kegs)} kegs)`:''}${cmpPhrase('cases')}`;
     if(P.plan)s+=`, ${nf(a.cases/P.plan*100,1)}% of the ${nf(P.plan)}-case monthly plan`;
     if(P.planFull)s+=`. Across the ${P.planFull.n} complete month${P.planFull.n>1?'s':''}, output was ${nf(P.planFull.act/P.planFull.plan*100,1)}% of plan (${nf(P.planFull.act)} vs ${nf(P.planFull.plan)})`;
     out.summary.push(s+'.');
@@ -1054,7 +1056,7 @@ function rptCharts(P,met,which){
   const tl2=(labels,t)=>t==null?[]:[{type:'line',label:'Target',data:labels.map(()=>t),borderColor:RC.grey,borderDash:[5,4],borderWidth:1.5,pointRadius:0}];
   if(which.includes('prod')&&(met.includes('cases')||met.includes('cph'))){
     const ds=[];
-    if(met.includes('cases'))ds.push({type:'bar',label:'Cases bottled',data:P.series.map(s=>s.a.cases),backgroundColor:P.series.map((_,i)=>fade(RC.navy,i)),yAxisID:'y',order:3});
+    if(met.includes('cases'))ds.push({type:'bar',label:'Production cases',data:P.series.map(s=>s.a.cases),backgroundColor:P.series.map((_,i)=>fade(RC.navy,i)),yAxisID:'y',order:3});
     if(met.includes('cph'))ds.push({type:'line',label:'Cases per hour',data:P.series.map(s=>s.a.cph),borderColor:RC.amber,backgroundColor:RC.amber,yAxisID:'y1',pointRadius:2.5,borderWidth:2,order:1,spanGaps:true});
     out.push({t:`Production cases and cases per hour, by ${P.grain}`,img:chartImg({data:{labels:L,datasets:ds},options:{plugins:{legend:{display:true,position:'top',align:'end'}},
       scales:{x:{grid:{display:false}},y:{beginAtZero:true,title:{display:true,text:'Cases',color:RC.muted}},y1:{position:'right',beginAtZero:true,grid:{display:false},title:{display:true,text:'Cases per hour',color:RC.muted}}}}})});
@@ -1160,7 +1162,7 @@ function rptBuild(o){
   }
   if(sec.includes('notes')&&o.notes&&o.notes.trim())h+=`<h2>Notes</h2><div class="notes">${E(o.notes.trim())}</div>`;
   const files=(INFO&&INFO.files)||[];
-  h+=`<div class="foot">Source: CBG Gross Efficiency, Utilities Tracking, Daily Process Report, monthly process loss, OEE and FTR workbooks${files.length?` (${files.length} files)`:''}. Cases per hour = cases ÷ available hours; utilities = total usage ÷ production hl; process loss = Daily Process Report, Process Loss (Volume); brewing loss = 100 − brewhouse extract recovery. </div></div>`;
+  h+=`<div class="foot">Source: CBG Gross Efficiency, Utilities Tracking, Daily Process Report, monthly process loss, OEE and FTR workbooks${files.length?` (${files.length} files)`:''}. Production cases = cases bottled + kegs (1 keg = 2.75 cases); cases per hour = cases bottled ÷ available hours; utilities = total usage ÷ production hl; process loss = Daily Process Report, Process Loss (Volume); brewing loss = 100 − brewhouse extract recovery. </div></div>`;
   // plain-text version for email / clipboard
   const lines=[`${title}: ${P.label}`,''];
   if(txt.summary.length){lines.push('Summary');txt.summary.forEach(s=>lines.push('- '+s));lines.push('')}
