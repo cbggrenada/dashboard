@@ -30,6 +30,12 @@ function uploadedAt(file) {
   return fs.statSync(file).mtimeMs;
 }
 
+// KPI names in the Ops KPIs MD report -> the dashboard's keys
+const MD_KEYS = [[/^water/, 'water'], [/^fuel/, 'fuel'], [/^electric/, 'elec'], [/^c[o0]2/, 'co2'], [/^extract recovery/, 'er'], [/^brews per day/, 'bpd'],
+  [/^process loss/, 'loss'], [/^oee ?%?$/, 'oee'], [/^oee util/, 'oeeUtil'], [/^total bottling loss/, 'bottLoss'], [/^bottling eff/, 'bottEff'], [/^bottling util/, 'bottUtil'],
+  [/^(case per hr|production cases per h)/, 'cph'], [/^production cases$/, 'cases'], [/^plant avail/, 'avail'], [/^maintenance compl/, 'pm'], [/^ftr/, 'ftr']];
+const mdKey = l => { const t = String(l).toLowerCase().replace(/\s+/g, ' ').trim(); const f = MD_KEYS.find(([re]) => re.test(t)); return f ? f[1] : null; };
+
 const months = {};      // "2026-09" -> { rows: { "2026-09-01": {...} }, targets: {...} }
 const report = [];
 let problems = 0;
@@ -110,6 +116,12 @@ for (const { name, res, days, mids, skip } of parsed) {
     if (v.kpi) m.kpi = Object.assign(m.kpi || {}, v.kpi);
     if (v.targets) Object.assign(m.targets, v.targets);
   }
+  if (res.md) {   // Ops KPIs MD report: the official month-to-date and year-to-date figures, a whole month at a time
+    const byM = {};
+    for (const r of res.md) { const k = mdKey(r.label); if (!k) continue; const id = `${r.y}-${String(r.m).padStart(2, '0')}`; (byM[id] = byM[id] || {})[k] = { a: r.mtd.a, b: r.mtd.b, ly: r.mtd.ly, ya: r.ytd.a, yb: r.ytd.b, yly: r.ytd.ly }; }
+    for (const [id, md] of Object.entries(byM)) { const m = months[id] || (months[id] = { rows: {}, targets: {} }); m.md = md; }
+    res.mdMonths = Object.keys(byM).sort();
+  }
   if (res.type === 'Daily Process Report') {
     for (const ds of days) mergeTargets(ds.slice(0, 7), Object.fromEntries(Object.entries({
       loss: res.rows[ds].plTgt ?? res.targets.loss, brew: res.targets.brew, bpd: res.rows[ds].bpdTgt ?? res.targets.bpd,
@@ -117,6 +129,7 @@ for (const { name, res, days, mids, skip } of parsed) {
   } else {
     mergeTargets(res.month || (days.length ? days[days.length - 1].slice(0, 7) : null), res.targets);
   }
+  if (res.mdMonths) { report.push(`OK    ${name}: ${res.type}, ${res.mdMonths.length} months (${res.mdMonths.join(', ')}); its figures replace the calculated ones for those months`); continue; }
   report.push(`OK    ${name}: ${res.type}, ` + (mids.length && !days.length
     ? `${mids.length} month${mids.length > 1 ? 's' : ''} (${mids[0]} to ${mids[mids.length - 1]})`
     : `${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`));
@@ -137,11 +150,12 @@ for (const id of Object.keys(months)) if (Object.keys(months[id].rows).length) {
 for (const id of Object.keys(months)) {
   const m = months[id], y = id.slice(0, 4);
   if (lastMonth[y] && id > lastMonth[y]) { delete m.kpi; delete m.vol; }
-  if (!Object.keys(m.rows).length && !m.kpi && !m.vol) delete months[id];
+  if (!Object.keys(m.rows).length && !m.kpi && !m.vol && !m.md) delete months[id];
 }
 
 // PM compliance year to date: the average of the monthly figures from January, as the SCTCM reports calculate it,
 // worked out across all PM files (a single file may only hold the last few months)
+for (const id of Object.keys(months)) { const md = months[id].md; if (md && md.pm && md.pm.a != null) (months[id].kpi = months[id].kpi || {}).pmMtd = md.pm.a; }
 {
   const byYear = {};
   for (const id of Object.keys(months).sort()) {
@@ -149,6 +163,15 @@ for (const id of Object.keys(months)) {
     const s = byYear[id.slice(0, 4)] || (byYear[id.slice(0, 4)] = { t: 0, n: 0 });
     s.t += k.pmMtd; s.n++; k.pmYtd = +(s.t / s.n).toFixed(3);
   }
+}
+
+// Ops KPIs MD report: its OEE, FTR and PM compliance and its budgets replace those from the other files for the months it covers
+for (const id of Object.keys(months)) {
+  const md = months[id].md; if (!md) continue;
+  const k = months[id].kpi = months[id].kpi || {}, t = months[id].targets;
+  for (const x of ['oee', 'ftr', 'pm']) if (md[x]) { if (md[x].a != null) k[x + 'Mtd'] = md[x].a; if (md[x].ya != null) k[x + 'Ytd'] = md[x].ya; }
+  for (const x of ['cases', 'water', 'fuel', 'elec', 'co2', 'loss', 'bpd', 'oee', 'ftr', 'pm', 'cph']) if (md[x] && md[x].b != null) t[x] = md[x].b;
+  if (md.er && md.er.b != null) t.brew = +(100 - md.er.b).toFixed(2);
 }
 
 // Say so when the latest month with daily data has no FTR / OEE figure yet (the cell is blank or shows an error such as #DIV/0!)
