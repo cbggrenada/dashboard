@@ -34,3 +34,4 @@ OK    July_2026.xls: Monthly process loss (volume), 1 month (2026-07 to 2026-07)
 OK    August_2026.xls: Monthly process loss (volume), 1 month (2026-08 to 2026-08)
 OK    September_2026.xls: Monthly process loss (volume), 1 month (2026-09 to 2026-09)
 OK    October_2026.xls: Monthly process loss (volume), 1 month (2026-10 to 2026-10)
+NOTE  CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: no OEE figure for 2026-10 yet (the month's overall OEE cell is empty or shows an error), so the dashboard shows OEE up to 2026-09.
