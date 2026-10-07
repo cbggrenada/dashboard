@@ -85,12 +85,12 @@ function parseUtil(wb,fname){
   if(mo==null)mo=monthFromText(fname);if(yr==null)yr=yearFromText(fname);
   if(mo==null||yr==null)throw new Error('Could not tell which month this utilities file covers.');
   const a=readSheet(wb.Sheets[sn],80,40);
-  const h=a.findIndex(r=>r&&r.some(c=>/electricity total/i.test(txt(c))));
+  const h=a.findIndex(r=>r&&r.some(c=>/^electricity( total)?$/i.test(txt(c).replace(/\s+/g,' ')))&&r.some(c=>/^water$/i.test(txt(c))));
   if(h<0)throw new Error('Could not find the utility columns.');
   const C={};a[h].forEach((c,i)=>{const t=txt(c).toUpperCase();
-    if(/ELECTRICITY TOTAL/.test(t))C.elec=i;else if(t==='WATER')C.water=i;else if(t==='FUEL')C.fuel=i;else if(/^CO2/.test(t))C.co2=i;else if(/^PRODUCTION/.test(t))C.prod=i});
+    if(/ELECTRICITY TOTAL/.test(t)||(t==='ELECTRICITY'&&C.elec==null))C.elec=i;else if(t==='WATER')C.water=i;else if(t==='FUEL')C.fuel=i;else if(/^CO2/.test(t))C.co2=i;else if(/^PRODUCTION/.test(t))C.prod=i});
   for(let r=h+1;r<Math.min(h+4,a.length);r++){const row=a[r]||[];for(let i=(C.prod||0);i<row.length;i++)if(txt(row[i]).toUpperCase()==='TOTAL'){C.vol=i;break}if(C.vol!=null)break}
-  let seen=false;
+  let seen=false;const extra={},last=new Date(yr,mo+1,0).getDate();
   for(let r=h+1;r<a.length;r++){
     const row=a[r];if(!row)continue;
     if(/^total$/i.test(txt(row[0]))||row.some(c=>txt(c).toUpperCase()==='MTD'))break;
@@ -98,10 +98,42 @@ function parseUtil(wb,fname){
     if(d==null&&seen)d=31;            // unlabelled rows under the day list still count in the sheet totals
     if(d==null||d<1||d>31||d%1)continue;seen=true;
     // rows past the month's last day (e.g. "29"-"31" in February) still count in the sheet's totals, so fold them into the last day
-    const last=new Date(yr,mo+1,0).getDate(),ds=dstr(yr,mo,Math.min(d,last));
+    const ds=dstr(yr,mo,Math.min(d,last));
     const v={elec:num(row[C.elec]),water:num(row[C.water]),fuel:num(row[C.fuel]),co2:num(row[C.co2]),utilHl:C.vol!=null?num(row[C.vol]):null};
     if(!Object.values(v).some(x=>x))continue;
+    if(d>last)for(const k in v)if(v[k])extra[k]=(extra[k]||0)+v[k];
     const rec=rows[ds]||(rows[ds]={elec:0,water:0,fuel:0,co2:0,utilHl:0});for(const k in v)rec[k]=+(rec[k]+(v[k]||0)).toFixed(4);
+  }
+  // the sheet's own Total row: if the extra rows past the month's end (e.g. 29-31 in February) only repeat a total
+  // (February 2025 has the month's fuel typed again on day 31), leave them out so the month matches the sheet
+  const tr=a.find(r=>r&&/^total$/i.test(txt(r[0])));
+  const lastDs=dstr(yr,mo,last);
+  if(tr&&rows[lastDs])for(const k of Object.keys(extra)){const col={elec:C.elec,water:C.water,fuel:C.fuel,co2:C.co2,utilHl:C.vol}[k];const tot=col!=null?num(tr[col]):null;if(tot==null)continue;
+    const sum=Object.values(rows).reduce((x,r)=>x+(r[k]||0),0);
+    if(Math.abs(sum-tot)>1&&Math.abs(sum-extra[k]-tot)<=1)rows[lastDs][k]=+(rows[lastDs][k]-extra[k]).toFixed(4)}
+  // figures that can't be daily usage (a meter reading in the electricity column, mostly negative water) mean the
+  // Utility Analysis sheet is broken for this month: report it instead of putting wrong ratios on the dashboard
+  {const vals=k=>Object.values(rows).map(r=>r[k]||0),sum=k=>vals(k).reduce((x,y)=>x+y,0);
+    const bad=[];const e=vals('elec'),te=sum('elec');
+    if(te>0&&Math.max(...e)>0.5*te)bad.push(`electricity on one day is ${Math.round(Math.max(...e)).toLocaleString('en-US')} kWh out of ${Math.round(te).toLocaleString('en-US')} for the month (looks like a meter reading)`);
+    const w=vals('water'),neg=w.filter(x=>x<0).length;
+    if(sum('water')<=0||neg>w.length/3)bad.push(`water is negative on ${neg} of ${w.length} days`);
+    if(bad.length)throw new Error(`the Utility Analysis figures look wrong for this month: ${bad.join('; ')}. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.`);}
+  // some files (e.g. early 2025) never had the production columns filled in on Utility Analysis:
+  // take the daily production hl from the PROD.FIG. sheet instead (same figures when both are filled in)
+  let prodSrc='Utility Analysis';
+  if(!Object.values(rows).some(r=>r.utilHl>0)){
+    const pn=wb.SheetNames.find(n=>/^prod\.?\s*fig/i.test(n.trim()));
+    if(pn){const p=readSheet(wb.Sheets[pn],60,20);
+      const ph=p.findIndex(r=>r&&r.some(c=>/^total\s*\(\s*hls?\s*\)?/i.test(txt(c))));
+      if(ph>=0){const ct=p[ph].findIndex(c=>/^total\s*\(\s*hls?/i.test(txt(c)));let cd=-1;
+        for(let r=ph+1;r<p.length&&cd<0;r++){const rw=p[r]||[];for(let i=0;i<ct;i++){const v=num(rw[i]);if(v===1){cd=i;break}}}
+        let got=0;
+        if(cd>=0)for(let r=ph+1;r<p.length;r++){const rw=p[r]||[];const d=num(rw[cd]);if(d==null||d<1||d>31||d%1)continue;
+          const v=num(rw[ct]);if(!v||v<=0)continue;const last=new Date(yr,mo+1,0).getDate(),ds=dstr(yr,mo,Math.min(d,last));
+          const rec=rows[ds]||(rows[ds]={elec:0,water:0,fuel:0,co2:0,utilHl:0});rec.utilHl=+((rec.utilHl||0)+v).toFixed(4);got+=v}
+        if(got>0)prodSrc='PROD.FIG.';}}
+    if(prodSrc==='Utility Analysis')prodSrc=null;
   }
   // monthly targets from the Daily KPIs sheet
   const kn=wb.SheetNames.find(n=>/^daily kpis$/i.test(n.trim()));
@@ -117,7 +149,7 @@ function parseUtil(wb,fname){
         else if(/^electricity \(kwh\.\/hl\.\)/.test(lab))targets.elec=v;
         else if(/^fuel \(l\/hl\.\)/.test(lab))targets.fuel=v;}
     }}
-  return {rows,targets,month:dstr(yr,mo,1).slice(0,7)};
+  return {rows,targets,month:dstr(yr,mo,1).slice(0,7),prodSrc};
 }
 // Daily Process Report workbook: one sheet per report day
 function parseProcess(wb,fname){
@@ -163,9 +195,10 @@ function parseProcess(wb,fname){
             cG=H.findIndex(t=>/^gfe/.test(t)),cT=H.findIndex(t=>/^bbt hls$/.test(t));
       for(let r=fh+1;r<a.length;r++){
         const rw=a[r]||[];if(rw.some(c=>/process loss \(volume\)/i.test(txt(c))))break;
-        const fd=parseDate(rw[cD]);const fv=num(rw[cF])||0,g=cG>=0?(num(rw[cG])||0):0,bbt=num(rw[cT]);
+        let fd=parseDate(rw[cD]);const fv=num(rw[cF])||0,g=cG>=0?(num(rw[cG])||0):0,bbt=num(rw[cT]);
         if(!fd||!(fv+g>0)||bbt==null||bbt<=0)continue;
         if(mo!=null&&+fd.slice(5,7)-1!==mo)continue;   // earlier months' filtrations repeated at the top of a new month's report
+        if(+fd.slice(0,4)!==y)fd=y+fd.slice(4);   // a mistyped year on a filtration in this month's report (e.g. 2023 for 2025)
         const key=[txt(rw[cB]).toUpperCase(),fd,fv,g,bbt].join('|');if(seenFilt.has(key))continue;seenFilt.add(key);
         const t=row(fd);t.plDayFv=+((t.plDayFv||0)+fv+g).toFixed(3);t.plDayBbt=+((t.plDayBbt||0)+bbt).toFixed(3);
       }

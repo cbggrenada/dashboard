@@ -38,6 +38,7 @@ const mdKey = l => { const t = String(l).toLowerCase().replace(/\s+/g, ' ').trim
 
 const months = {};      // "2026-09" -> { rows: { "2026-09-01": {...} }, targets: {...} }
 const report = [];
+const noProdHl = [];
 let problems = 0;
 
 function mergeRows(rows) {
@@ -133,6 +134,20 @@ for (const { name, res, days, mids, skip } of parsed) {
   report.push(`OK    ${name}: ${res.type}, ` + (mids.length && !days.length
     ? `${mids.length} month${mids.length > 1 ? 's' : ''} (${mids[0]} to ${mids[mids.length - 1]})`
     : `${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`));
+  if (res.type === 'Utilities Tracking' && res.prodSrc === 'PROD.FIG.') report.push(`NOTE  ${name}: the production hl columns on the Utility Analysis sheet are empty, so production hl comes from the PROD.FIG. sheet.`);
+  if (res.type === 'Utilities Tracking' && res.prodSrc === null && res.month) noProdHl.push([res.month, name]);
+}
+
+// Utilities files with no production hl anywhere (e.g. January and February 2025): the ratios need it,
+// so use the bottled hl from the Gross Efficiency file for those days (they match the utilities files to within 1%)
+for (const [id, name] of noProdHl) {
+  const m = months[id]; if (!m) continue;
+  let n = 0, hl = 0;
+  for (const r of Object.values(m.rows)) if (!(r.utilHl > 0) && r.bottledHl > 0 && (r.elec != null || r.water != null)) { r.utilHl = r.bottledHl; n++; hl += r.bottledHl; }
+  report.push(n
+    ? `NOTE  ${name}: no production hl in this file (Utility Analysis and PROD.FIG. are empty), so the utility ratios use the bottled hl from the Gross Efficiency file (${Math.round(hl).toLocaleString('en-US')} hl over ${n} days).`
+    : `WARN  ${name}: no production hl in this file and no bottled hl in the Gross Efficiency file for that month, so the utility ratios (per hl) can't be worked out. Fill in PROD.FIG. and upload it again.`);
+  if (!n) problems++;
 }
 
 // Optional target overrides kept in the repo (blank = use the targets found in the files)
