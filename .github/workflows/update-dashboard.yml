@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history, so the build knows which upload of a file is the newest
 
       - uses: actions/setup-node@v4
         with:
@@ -36,34 +38,35 @@ jobs:
       - name: Read raw files and build the dashboard data
         run: node scripts/build-data.js
 
+      # Keeps a copy of the data in the repository. It never touches index.html or README.md,
+      # so uploading those can't clash with this step. If someone uploads while it runs, it retries.
       - name: Save the data file in the repository
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html data/dashboard-data.json data/dashboard-data.js data/build-report.txt
-          if git diff --cached --quiet; then
-            echo "Data unchanged"
-          else
-            git commit -m "Update dashboard data"
-            git push
-          fi
+          git add data/dashboard-data.json data/dashboard-data.js data/build-report.txt
+          if git diff --cached --quiet; then echo "Data unchanged"; exit 0; fi
+          git commit -m "Update dashboard data"
+          for i in 1 2 3; do
+            git push && exit 0
+            echo "Someone pushed meanwhile, retrying ($i)"
+            sleep 5
+            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}" || { git rebase --abort; exit 1; }
+          done
+          exit 1
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
-  # Publishes when Settings > Pages > Source is "GitHub Actions".
-  # If Pages is set to "Deploy from a branch" instead, this step is skipped over
-  # and the data file saved above is what the site uses.
+  # Publishes the website (Settings > Pages > Source: GitHub Actions).
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    continue-on-error: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-        with:
-             fetch-depth: 0
