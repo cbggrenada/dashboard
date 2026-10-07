@@ -46,13 +46,16 @@ Tips:
 
 ## Compare periods
 
-Click **Compare** (top right). It opens a separate **Compare** window (the dashboard stays open behind it), starting on what the dashboard is showing: a month against the month before, a date against the day before, otherwise the latest comparison available.
+Comparisons open in their own **Compare** window (nothing is added to the dashboard page). Two ways to open it:
 
-- **Quick comparisons** at the top do it in one click: this month so far vs last month, last month vs the month before, last month vs the same month last year, the last 3 months, this year vs last year, the latest day vs the day before.
-- Or choose your own: **Years / Months / Dates**, then *Compare [period] with [period]*. **+ another period** adds up to four.
-- The blue line says how many KPIs got better or worse. Each value is green (on target), amber (within 5%) or red, and the Change column says *better* or *worse*. Click a KPI to chart it.
-- **Copy table** copies it for Excel or an email, **Print** prints it, and **Refresh** reloads the figures from the dashboard.
-- When the latest period is still running, **Same days of each month / Same part of each year** cuts the others to the same point so the comparison is fair.
+- **Compare with…** next to the period filters: pick *Previous month*, *Same month last year* or *Another month…* (in Date view: *Previous day*, *Same day last year*, *Another date…*; in YTD view: *Last year* or *Another year…*). The window opens straight away on that comparison.
+- The **Compare** button at the top right.
+
+In the window:
+- **Quick comparisons**: This month vs last month · Last month vs the month before · This month vs same month last year · This year vs last year (the last two appear once last year's files are uploaded).
+- Or pick **Years / Months / Dates** and *Compare [period] with [period]*.
+- The blue line says how many KPIs got better or worse; values are green (on target), amber (within 5%) or red, and the Change column says *better* or *worse*. Click a KPI to chart it. **Copy table**, **Print**, **Refresh**, **Close window**.
+- A month or year still in progress is always compared like for like: the other period is cut to the same day.
 - If the browser blocks new windows, Compare opens inside the page instead. Allow pop-ups for the dashboard's address to get the separate window.
 
 ## Targets
