@@ -38,6 +38,8 @@ How the loss measures are worked out:
 
 Tips:
 
+- **One period at a time.** The Year, Month and Date pickers on the dashboard each take a single choice (pick one and the list closes). To look at several years, months or dates side by side, use **Compare**, which still takes up to six.
+- **Utilities files:** production hl for the ratios is read from the Utility Analysis sheet. If those columns are empty (as in March to May 2025) it comes from the PROD.FIG. sheet. If both are empty (January and February 2025) the bottled hl from the Gross Efficiency file is used, which matches to within about 1%. A month whose Utility Analysis figures are clearly broken (a meter reading in the electricity column, water negative on most days) is left off and named in `data/build-report.txt`.
 - **Updating a file you already uploaded** (for example the Gross Efficiency file, which grows all year): upload it with the **same file name**. GitHub replaces the old copy.
 - Don't upload duplicate copies such as `Gross_Efficiency_2026 (1).xlsx`.
 - **Earlier years (2025)** and later years (2027, 2028) work the same way: upload that year's files to **data/raw** whenever you're ready, with the year in the file name (`Gross_Efficiency_2025.xlsx`, `August_25_Utilities_Tracking.xlsx`, `FTR Calculations 2025.xlsx`, a 2025 Ops KPIs MD report …). They sit alongside the 2026 files, the year appears in the **Year** list, and the 2026 figures are then compared with the same period of 2025. The year in a Gross Efficiency file's name decides which year its sheets belong to.
@@ -49,7 +51,7 @@ Tips:
 Comparisons open in a **Compare** panel in the middle of the screen, over the dashboard (nothing is added to the page). Close it with **Done**, the **×**, the Esc key or by clicking outside it.
 
 Open it with:
-- **Compare with…** next to the period filters: *Previous month*, *Same month last year*, *Another month…* (Date view: *Previous day*, *Same day last year*, *Another date…*; YTD view: *Last year*, *Another year…*). If several months, dates or years are selected on the dashboard, *The selected … side by side* puts them all in the panel.
+- **Compare with…** next to the period filters: *Previous month*, *Same month last year*, *Another month…* (Date view: *Previous day*, *Same day last year*, *Another date…*; YTD view: *Last year*, *Another year…*).
 - The **Compare** button at the top right.
 
 In the panel:

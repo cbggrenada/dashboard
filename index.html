@@ -807,6 +807,12 @@ body::before{background:
 @media (prefers-reduced-motion:reduce){.tile.wig{animation:none}.tile{transform:none!important}}
 @media print{.tile::before,.tile::after,.panel::before,.panel::after{display:none!important}.tile{transform:none!important}}
 
+
+/* year / month / date lists: solid enough to read over the cards behind them */
+.msp{background:rgba(255,255,255,.94)!important}
+:root[data-theme="dark"] .msp{background:rgba(28,28,30,.95)!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .msp{background:rgba(28,28,30,.95)!important}}
+.msp .msh{font-weight:600;padding:6px 4px 2px}
 </style>
 <script>(function(){try{var t=localStorage.getItem('cbg-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);var g=localStorage.getItem('cbg-glass');if(g!==null&&!isNaN(+g))document.documentElement.style.setProperty('--lg-t',Math.max(0,Math.min(100,+g))/100)}catch(e){}})();</script></head>
 <body>
@@ -1289,6 +1295,8 @@ function syncSelection(){
   const inY=RECS.filter(r=>S.years.includes(r.y)),mAvail=uniq(inY.map(mid)),dAvail=inY.map(r=>r.ds);
   S.months=uniq(S.months.filter(id=>mAvail.includes(id)));if(!S.months.length&&mAvail.length)S.months=[mAvail[mAvail.length-1]];
   S.dates=uniq(S.dates.filter(ds=>dAvail.includes(ds)));if(!S.dates.length&&dAvail.length)S.dates=[dAvail[dAvail.length-1]];
+  // the dashboard shows one year, one month or one date at a time (several periods side by side live in Compare)
+  S.years=S.years.slice(-1);S.months=S.months.slice(-1);S.dates=S.dates.slice(-1);
   // the latest selected item anchors targets and labels
   const anchor=S.mode==='month'&&S.months.length?S.months[S.months.length-1]:S.mode==='date'&&S.dates.length?S.dates[S.dates.length-1]:null;
   if(anchor){S.year=+anchor.slice(0,4);S.month=+anchor.slice(5,7)-1}else{S.year=S.years[S.years.length-1];const l=RECS.filter(r=>r.y===S.year).pop();S.month=l?l.m:null}
@@ -1545,22 +1553,22 @@ function msBox(key,label,summary,body,visible){
   const el=document.getElementById('ms-'+key);el.hidden=!visible;if(!visible)return;
   const open=MS_OPEN===key,prev=el.querySelector('.msl');const top=prev?prev.scrollTop:0;
   el.innerHTML=`<button class="msb" data-ms="${key}" aria-haspopup="true" aria-expanded="${open}"><span class="msk">${label}</span><span class="msv">${esc(summary)}</span></button>
-    ${open?`<div class="msp" role="dialog" aria-label="${label}"><div class="msa"><button data-msall="${key}">Select all</button><button data-mslatest="${key}">Latest only</button></div><div class="msl">${body}</div></div>`:''}`;
+    ${open?`<div class="msp" role="dialog" aria-label="${label}"><div class="msl" role="radiogroup">${body}</div></div>`:''}`;
   const l=el.querySelector('.msl');if(l)l.scrollTop=top;
 }
 function renderControls(){
   syncSelection();
   const ys=yearList(),hasY=y=>RECS.some(r=>r.y===y);
   msBox('year','Year',listText(S.years,String,'years'),
-    ys.map(y=>`<label class="mso"><input type="checkbox" data-opt="year" value="${y}" ${S.years.includes(y)?'checked':''}>${y}${hasY(y)?'':' <em>no data yet</em>'}</label>`).join(''),true);
+    ys.map(y=>`<label class="mso"><input type="radio" name="opt-year" data-opt="year" value="${y}" ${S.years.includes(y)?'checked':''}>${y}${hasY(y)?'':' <em>no data yet</em>'}</label>`).join(''),true);
   const inY=RECS.filter(r=>S.years.includes(r.y)),mAvail=uniq(inY.map(mid)),mY=S.years.length>1;
   const mName=id=>`${MONTHS_L[+id.slice(5)-1]}${mY?' '+id.slice(0,4):''}`;
   msBox('month','Month',!S.months.length?'None':S.months.length===1?mName(S.months[0]):listText(S.months,id=>MONTHS[+id.slice(5)-1]+(mY?' '+id.slice(2,4):''),'months'),
-    mAvail.map(id=>`<label class="mso"><input type="checkbox" data-opt="month" value="${id}" ${S.months.includes(id)?'checked':''}>${mName(id)}</label>`).join('')||'<p class="msn">No data in the selected years.</p>',S.mode==='month');
+    mAvail.map(id=>`<label class="mso"><input type="radio" name="opt-month" data-opt="month" value="${id}" ${S.months.includes(id)?'checked':''}>${mName(id)}</label>`).join('')||'<p class="msn">No data in the selected years.</p>',S.mode==='month');
   const dSum=!S.dates.length?'None':S.dates.length===1?fdate(S.dates[0]):S.dates.length<=3?S.dates.map(ds=>+ds.slice(8)).join(', ')+' '+MONTHS[+S.dates[S.dates.length-1].slice(5,7)-1]:`${S.dates.length} dates`;
-  msBox('date','Date',dSum,uniq(inY.map(mid)).reverse().map(id=>{const ds=inY.filter(r=>mid(r)===id);const all=ds.every(r=>S.dates.includes(r.ds));
-    return `<div class="msg"><label class="msh"><input type="checkbox" data-opt="dmonth" value="${id}" ${all?'checked':''}>${MONTHS_L[+id.slice(5)-1]} ${id.slice(0,4)}</label>
-      <div class="msd">${ds.map(r=>`<label class="mso sm" title="${fdate(r.ds)}"><input type="checkbox" data-opt="date" value="${r.ds}" ${S.dates.includes(r.ds)?'checked':''}>${DAYS[new Date(r.y,r.m,r.d).getDay()].slice(0,3)} ${r.d}</label>`).join('')}</div></div>`}).join('')+'<p class="msn">Tip: shift-click to select a run of dates.</p>',S.mode==='date');
+  msBox('date','Date',dSum,uniq(inY.map(mid)).reverse().map(id=>{const ds=inY.filter(r=>mid(r)===id);
+    return `<div class="msg"><div class="msh">${MONTHS_L[+id.slice(5)-1]} ${id.slice(0,4)}</div>
+      <div class="msd">${ds.map(r=>`<label class="mso sm" title="${fdate(r.ds)}"><input type="radio" name="opt-date" data-opt="date" value="${r.ds}" ${S.dates.includes(r.ds)?'checked':''}>${DAYS[new Date(r.y,r.m,r.d).getDay()].slice(0,3)} ${r.d}</label>`).join('')}</div></div>`}).join(''),S.mode==='date');
   document.querySelectorAll('#mode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.mode));
   document.getElementById('excl').checked=S.excl;
   const cs=document.getElementById('cmp'),ch=cmpChoices();
@@ -2028,16 +2036,10 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target,o=t.dataset&&t.dataset.opt;if(!o)return;
-  if(o==='year')S.years=toggle(S.years,+t.value,t.checked);
-  if(o==='month')S.months=toggle(S.months,t.value,t.checked);
-  if(o==='dmonth'){const ds=RECS.filter(r=>mid(r)===t.value).map(r=>r.ds);S.dates=t.checked?uniq([...S.dates,...ds]):S.dates.filter(d=>!ds.includes(d))}
-  if(o==='date'){
-    if(SHIFT&&MS_ANCHOR){const inY=RECS.filter(r=>S.years.includes(r.y)).map(r=>r.ds),a=inY.indexOf(MS_ANCHOR),z=inY.indexOf(t.value);
-      if(a>=0&&z>=0){const run=inY.slice(Math.min(a,z),Math.max(a,z)+1);S.dates=t.checked?uniq([...S.dates,...run]):S.dates.filter(d=>!run.includes(d))}}
-    else S.dates=toggle(S.dates,t.value,t.checked);
-    MS_ANCHOR=t.value}
-  // unticking the last item falls back to the latest one; keep the list open while picking
-  render();
+  if(o==='year')S.years=[+t.value];
+  if(o==='month')S.months=[t.value];
+  if(o==='date')S.dates=[t.value];
+  MS_OPEN=null;render();
 });
 let SHIFT=false;document.addEventListener('keydown',e=>{if(e.key==='Shift')SHIFT=true;if(e.key==='Escape'&&MS_OPEN){MS_OPEN=null;renderControls()}});
 document.addEventListener('keyup',e=>{if(e.key==='Shift')SHIFT=false});
