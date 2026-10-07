@@ -463,7 +463,18 @@ main{padding-left:clamp(16px,2vw,32px);padding-right:clamp(16px,2vw,32px)}
 .navb{display:flex;gap:8px;flex-shrink:0}
 @media (max-width:520px){.nav .nt{display:none}#rptBtn,#cmpBtn{padding:6px 11px}}
 dialog.cmpd{width:min(1120px,96vw)}
-.cmpd .cmp-ctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin:6px 0 12px}
+.cmpd .cpx-chips{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 14px}
+.cmpd .cpx-chip{font:inherit;font-size:13.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:980px;padding:7px 14px;cursor:pointer}
+.cmpd .cpx-chip:hover{border-color:#01427A}
+.cmpd .cpx-chip[aria-pressed="true"]{background:#01427A;border-color:#01427A;color:#fff}
+.cmpd .cpx-sent{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.cmpd .cpx-w{font-size:14px;color:var(--muted)}
+.cmpd .cpx-p{display:inline-flex;align-items:center;gap:2px}
+.cmpd .cpx-sum{font-size:14.5px;margin:0 0 10px;padding:10px 12px;border-radius:8px;background:var(--pale)}
+.cmpd .cpx-sum .g{color:var(--good);font-weight:600}.cmpd .cpx-sum .b{color:var(--bad);font-weight:600}
+.cmpd .cpx-bw{font-size:12px;font-weight:500}
+@media (max-width:640px){.cmpd .cpx-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-right:-20px}.cmpd .cpx-chip{flex:none}}
+.cmpd .cmp-ctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:0 0 12px;padding-top:12px;border-top:1px solid var(--line)}
 .cmpd .seg{display:inline-flex;background:var(--pale);border-radius:8px;padding:3px}
 .cmpd .seg button{font:inherit;font-size:13.5px;font-weight:600;border:0;background:none;color:var(--ink);padding:6px 14px;border-radius:6px;cursor:pointer}
 .cmpd .seg button[aria-pressed="true"]{background:#01427A;color:#fff}
@@ -725,9 +736,31 @@ function cpxTarget(k,P){
   if(P.kind==='days'&&['oee','ftr','pm'].includes(k))return null;
   return tgtFor(k,P.y,P.m);
 }
+// one-click comparisons, built from the data that is uploaded
+function cpxPresets(){
+  if(!RECS.length)return [];
+  const lastRec=RECS[RECS.length-1],ms=uniq(RECS.map(mid)),ds=uniq(RECS.map(r=>r.ds)),ys=[...new Set(RECS.map(r=>r.y))].sort();
+  const lm=mid(lastRec),dim=new Date(lastRec.y,lastRec.m+1,0).getDate(),running=lastRec.d<dim-2;
+  const done=running?ms.filter(id=>id!==lm):ms,mn=id=>`${MONTHS_L[+id.slice(5)-1]}`,out=[];
+  const prevM=id=>{const y=+id.slice(0,4),m=+id.slice(5);return m===1?`${y-1}-12`:`${y}-${pad(m-1)}`};
+  if(running&&ms.includes(prevM(lm)))out.push({l:`${mn(lm)} so far vs ${mn(prevM(lm))}`,by:'month',sel:[prevM(lm),lm],same:true});
+  if(done.length>=2)out.push({l:`${mn(done[done.length-1])} vs ${mn(done[done.length-2])}`,by:'month',sel:done.slice(-2),same:false});
+  if(done.length&&ms.includes(shiftY(done[done.length-1],-1)))out.push({l:`${mn(done[done.length-1])} vs same month last year`,by:'month',sel:[shiftY(done[done.length-1],-1),done[done.length-1]],same:false});
+  if(done.length>=3)out.push({l:'Last 3 months',by:'month',sel:done.slice(-3),same:false});
+  if(ys.length>=2)out.push({l:`${ys[ys.length-1]} vs ${ys[ys.length-2]} (same part of the year)`,by:'year',sel:ys.slice(-2).map(String),same:true});
+  if(ds.length>=2)out.push({l:'Latest day vs the day before',by:'date',sel:ds.slice(-2),same:false});
+  return out;
+}
+// open with what the dashboard is showing: a month against the month before, a date against the day before
+function cpxFromView(){
+  const ms=uniq(RECS.map(mid)),ds=uniq(RECS.map(r=>r.ds));
+  if(S.mode==='month'&&S.months.length===1){const i=ms.indexOf(S.months[0]);if(i>0)return {by:'month',sel:[ms[i-1],ms[i]],same:true}}
+  if(S.mode==='date'&&S.dates.length===1){const i=ds.indexOf(S.dates[0]);if(i>0)return {by:'date',sel:[ds[i-1],ds[i]],same:false}}
+  const p=cpxPresets();return p.find(x=>x.by==='year')||p.find(x=>x.by==='month'&&!x.same)||p[0]||{by:'year',sel:cpxDefaults('year'),same:true};
+}
 function openCompare(){
   const d=document.getElementById('cmpDlg');
-  if(!CMP.sel||!CMP.sel.length)CMP.sel=cpxDefaults(CMP.by);
+  const v=cpxFromView();CMP.by=v.by;CMP.sel=[...v.sel];CMP.same=v.same;
   renderCompare();if(!d.open)d.showModal();
 }
 function renderCompare(){
@@ -737,8 +770,11 @@ function renderCompare(){
   // a period cut short (like for like) can't use whole-month official figures
   const P=CMP.sel.map(v=>{const p=cpxPeriod(by,v,cut);p.partial=!!cut&&!p.recs.some(r=>r.ds===lastDs)&&p.recs.length>0;p.a=agg(p.recs,false,p.kind,{partial:p.partial});return p});
   const optHtml=sel=>{let h='',g=null;for(const o of opts){if(o.g!==g){if(g!==null)h+='</optgroup>';if(o.g)h+=`<optgroup label="${esc(o.g)}">`;g=o.g}h+=`<option value="${o.v}" ${o.v===sel?'selected':''}>${esc(o.l)}</option>`}return h+(g?'</optgroup>':'')};
-  const seg=['year','month','date'].map(b=>`<button type="button" data-cby="${b}" aria-pressed="${by===b}">${b==='year'?'Year':b==='month'?'Month':'Date'}</button>`).join('');
-  const pick=CMP.sel.map((v,i)=>`<label>Period ${i+1}<span style="display:flex;gap:4px;align-items:center"><select data-ci="${i}">${optHtml(v)}</select>${CMP.sel.length>2?`<button type="button" class="rm" data-crm="${i}" title="Remove">×</button>`:''}</span></label>`).join('');
+  const seg=['year','month','date'].map(b=>`<button type="button" data-cby="${b}" aria-pressed="${by===b}">${b==='year'?'Years':b==='month'?'Months':'Dates'}</button>`).join('');
+  const sel1=(v,i)=>`<span class="cpx-p"><select data-ci="${i}" aria-label="Period ${i+1}">${optHtml(v)}</select>${CMP.sel.length>2?`<button type="button" class="rm" data-crm="${i}" title="Remove this period" aria-label="Remove">×</button>`:''}</span>`;
+  const pick=`<span class="cpx-w">Compare</span>${CMP.sel.map((v,i)=>(i?`<span class="cpx-w">${i===CMP.sel.length-1?'with':'and'}</span>`:'')+sel1(v,i)).join('')}`;
+  const presets=cpxPresets(),same=(x)=>x.by===by&&x.sel.length===CMP.sel.length&&x.sel.every((v,i)=>v===CMP.sel[i]);
+  const chips=presets.map((x,i)=>`<button type="button" class="cpx-chip" data-pre="${i}" aria-pressed="${same(x)}">${esc(x.l)}</button>`).join('');
   const lastRec=RECS[RECS.length-1];
   const sameLbl=by==='year'?`Same part of each year (1 Jan to ${lastRec?lastRec.d+' '+MONTHS[lastRec.m]:''})`:'Same days of each month';
   const showSame=by!=='date'&&(by==='year'?CMP.sel.map(Number).includes(lastRec&&lastRec.y):CMP.sel.includes(lastRec&&mid(lastRec)));
@@ -750,19 +786,24 @@ function renderCompare(){
     const cells=P.map(p=>{const v=cpxVal(k,p),t=cpxTarget(k,p),st=stOf(v,t,Kd.up);return `<td class="${st}" title="${t!=null?`Target ${Kd.up?'≥':'≤'} ${nf(+t,Kd.dp)}${st?' · '+ST_LABEL[st]:''}`:'No target'}">${fmtK(k,v)}</td>`}).join('');
     const a=cpxVal(k,first),b=cpxVal(k,lastP);let chg='<td class="chg">–</td>';
     if(P.length>1&&a!=null&&b!=null){const dlt=b-a,good=Kd.up?dlt>=0:dlt<=0,txt=Kd.pct||Kd.unit==='%'?`${dlt>=0?'+':'−'}${nf(Math.abs(dlt),1)} pts`:(a?`${dlt>=0?'+':'−'}${nf(Math.abs(dlt/a*100),1)}%`:'–');
-      chg=`<td class="chg ${dlt===0?'':good?'good':'bad'}" title="${fmtK(k,a)} → ${fmtK(k,b)}">${txt}</td>`}
+      const z=Math.abs(dlt)<1e-9;chg=`<td class="chg ${z?'':good?'good':'bad'}" title="${fmtK(k,a)} → ${fmtK(k,b)}">${z?'No change':`${dlt>0?'▲':'▼'} ${txt.replace(/^[+−]/,'')} <span class="cpx-bw">${good?'better':'worse'}</span>`}</td>`}
     return `<tr data-ck="${k}" class="${k===CMP.kpi?'sel':''}"><td>${esc(Kd.l)}${Kd.unit&&Kd.unit!=='%'?` <span style="color:var(--muted);font-size:12px">${esc(Kd.unit)}</span>`:''}</td>${cells}${P.length>1?chg:''}</tr>`}).join('');
   const days=`<tr><td style="color:var(--muted)">Production days</td>${P.map(p=>`<td style="color:var(--muted)">${p.recs.length?nf(p.recs.filter(r=>r.cases>0).length):'–'}</td>`).join('')}${P.length>1?'<td></td>':''}</tr>`;
   const head=`<tr><th>KPI</th>${P.map(p=>`<th>${esc(p.label)}<small>${esc(p.sub)}</small></th>`).join('')}${P.length>1?`<th>Change<small>${esc(first.label)} → ${esc(lastP.label)}</small></th>`:''}</tr>`;
   const kOpts=K.map(k=>`<option value="${k}" ${k===CMP.kpi?'selected':''}>${esc(KPI[k].l)}</option>`).join('');
-  d.innerHTML=`<div class="dlg"><div class="dlg-h"><h2>Compare periods</h2><p>Put years, months or single dates side by side. Green meets the target, amber is within ${NEAR_PCT}% of it, red is further off. Click a KPI to chart it.</p></div>
+  // headline: how many KPIs got better or worse from the first period to the last
+  let nb=0,nw=0;if(P.length>1)K.forEach(k=>{const a=cpxVal(k,first),b=cpxVal(k,lastP);if(a==null||b==null)return;const dl=+(b-a).toFixed(6);if(!dl)return;((KPI[k].up?dl>0:dl<0)?nb++:nw++)});
+  const head1=P.length>1?`<div class="cpx-sum"><b>${esc(lastP.label)}</b> compared with <b>${esc(first.label)}</b>: <span class="g">better on ${nb} KPI${nb===1?'':'s'}</span>, <span class="b">worse on ${nw}</span>.</div>`:'';
+  d.innerHTML=`<div class="dlg"><div class="dlg-h"><h2>Compare periods</h2><p>Pick a quick comparison, or choose your own periods below.</p></div>
   <div class="dlg-b">
-    <div class="cmp-ctl"><label>Compare by<span class="seg">${seg}</span></label>${pick}
-      ${CMP.sel.length<4&&opts.length>CMP.sel.length?'<button type="button" class="lnk" id="cAdd">+ Add period</button>':''}
+    ${chips?`<div class="cpx-chips">${chips}</div>`:''}
+    <div class="cmp-ctl"><span class="seg" role="group" aria-label="Compare by">${seg}</span><span class="cpx-sent">${pick}
+      ${CMP.sel.length<4&&opts.length>CMP.sel.length?'<button type="button" class="lnk" id="cAdd">+ another period</button>':''}</span>
       ${showSame?`<label class="chk"><input type="checkbox" id="cSame" ${CMP.same?'checked':''}>${esc(sameLbl)}</label>`:''}</div>
+    ${head1}
     ${opts.length?`<div class="cmp-grid"><div style="overflow:auto"><table class="cpxt"><thead>${head}</thead><tbody>${days}${rows}</tbody></table></div>
       <div><label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px">Chart <select id="cKpi" style="font:inherit;font-size:13.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink)">${kOpts}</select></label><div class="cv"><canvas id="cmpChart"></canvas></div></div></div>
-      <p class="cmp-note">${by==='date'?'OEE, FTR and PM compliance are monthly figures, so they are not shown for single dates. ':''}${by==='month'&&P.some(p=>p.partial)?'OEE, FTR and PM compliance are whole-month figures, so they are not shown for months cut short. ':''}${cut&&showSame?`Each period is cut to the same point as the latest one (${by==='year'?'1 Jan to '+lastRec.d+' '+MONTHS[lastRec.m]:'day 1 to '+cut}) so the comparison is like for like. `:''}Figures follow the same rules as the dashboard (the Ops KPIs MD report is used for whole months it covers).</p>`
+      <p class="cmp-note">Colours: green meets the target, amber is within ${NEAR_PCT}% of it, red is further off. Click a KPI to chart it. ${by==='date'?'OEE, FTR and PM compliance are monthly figures, so they are not shown for single dates. ':''}${by==='month'&&P.some(p=>p.partial)?'OEE, FTR and PM compliance are whole-month figures, so they are not shown for months cut short. ':''}${cut&&showSame?`Each period is cut to the same point as the latest one (${by==='year'?'1 Jan to '+lastRec.d+' '+MONTHS[lastRec.m]:'day 1 to '+cut}) so the comparison is like for like. `:''}Figures follow the same rules as the dashboard (the Ops KPIs MD report is used for whole months it covers).</p>`
       :'<p>No data has been uploaded yet.</p>'}
   </div>
   <div class="dlg-f"><span class="msg"></span><button class="btn" id="cCopy">Copy table</button><button class="btn primary" id="cClose">Close</button></div></div>`;
@@ -770,6 +811,7 @@ function renderCompare(){
   d.querySelectorAll('[data-cby]').forEach(b=>b.onclick=()=>{if(CMP.by!==b.dataset.cby){CMP.by=b.dataset.cby;CMP.sel=cpxDefaults(CMP.by)}renderCompare()});
   d.querySelectorAll('select[data-ci]').forEach(s=>s.onchange=()=>{CMP.sel[+s.dataset.ci]=s.value;renderCompare()});
   d.querySelectorAll('[data-crm]').forEach(b=>b.onclick=()=>{CMP.sel.splice(+b.dataset.crm,1);renderCompare()});
+  d.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const x=presets[+b.dataset.pre];CMP.by=x.by;CMP.sel=[...x.sel];CMP.same=x.same;renderCompare()});
   d.querySelectorAll('tr[data-ck]').forEach(tr=>tr.onclick=()=>{CMP.kpi=tr.dataset.ck;renderCompare()});
   if($('#cAdd'))$('#cAdd').onclick=()=>{const used=new Set(CMP.sel),o=opts.map(x=>x.v).filter(v=>!used.has(v));CMP.sel.push(o[o.length-1]);CMP.sel.sort();renderCompare()};
   if($('#cSame'))$('#cSame').onchange=e=>{CMP.same=e.target.checked;renderCompare()};

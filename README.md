@@ -42,10 +42,16 @@ Tips:
 - Don't upload duplicate copies such as `Gross_Efficiency_2026 (1).xlsx`.
 - **Earlier years (2025)** and later years (2027, 2028) work the same way: upload that year's files to **data/raw** whenever you're ready, with the year in the file name (`Gross_Efficiency_2025.xlsx`, `August_25_Utilities_Tracking.xlsx`, `FTR Calculations 2025.xlsx`, a 2025 Ops KPIs MD report …). They sit alongside the 2026 files, the year appears in the **Year** list, and the 2026 figures are then compared with the same period of 2025. The year in a Gross Efficiency file's name decides which year its sheets belong to.
 - To check what was read, open `<your site>/data/build-report.txt`, or the latest run on the **Actions** tab.
+- The build never changes `index.html` or `README.md`, so you can upload new versions of them at any time.
 
 ## Compare periods
 
-**Compare** (top right, next to Generate report) opens a pop-out window that puts periods side by side: whole **years**, **months** or single **dates**, two to four at a time (**+ Add period**). Each KPI is coloured green (on target), amber (within 5% of target) or red, the last column shows the change from the first period to the last, and clicking a KPI charts it. When the latest period is still running (this year, this month), **Same part of each year / Same days of each month** cuts the other periods to the same point so the comparison is like for like. **Copy table** copies it for Excel or an email.
+Click **Compare** (top right). The window opens on what the dashboard is showing (a month against the month before, a date against the day before, otherwise this year against last year).
+
+- **Quick comparisons** at the top do it in one click: this month so far vs last month, last month vs the month before, last month vs the same month last year, the last 3 months, this year vs last year, the latest day vs the day before.
+- Or choose your own: **Years / Months / Dates**, then *Compare [period] with [period]*. **+ another period** adds up to four.
+- The blue line says how many KPIs got better or worse. Each value is green (on target), amber (within 5%) or red, and the Change column says *better* or *worse*. Click a KPI to chart it. **Copy table** copies it for Excel or an email.
+- When the latest period is still running, **Same days of each month / Same part of each year** cuts the others to the same point so the comparison is fair.
 
 ## Targets
 
