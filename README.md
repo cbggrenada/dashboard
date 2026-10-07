@@ -59,6 +59,16 @@ In the panel:
 - **Email** opens a new email with the comparison written out; **Print** prints it on one landscape page; **Download PDF** saves it (title, coloured table and chart) as a PDF you can attach; **Copy table** copies it for Excel.
 - When the latest period is still running, the **Same days of each month / Same part of each year** switch (on by default) compares like for like. Turn it off to compare whole months.
 
+## Look and feel
+
+- **Glass cards.** The cards and charts are clear glass over a soft colour background.
+- **Transparency.** The droplet button at the top right opens a slider from 0 (solid, frosted) to 100 (fully clear). The default is 90, and **Reset to 90%** puts it back.
+- **Light and dark.** The moon/sun button switches between light mode and black dark mode. Until you choose, it follows your computer's setting.
+- **Hover and tap.** Moving the mouse onto a KPI card makes it wiggle, tilt towards the pointer and catch the light (bright spot, diagonal streaks and a prism-coloured edge). On a phone or tablet, tapping a card does the same. Chart panels catch the light but don't move. Computers set to reduce motion get the light only.
+- Your transparency and light/dark choices are remembered in that browser.
+- Printing, Download PDF and the Generate report output stay plain white.
+- The chart library is built into `index.html`, so the charts draw even where the internet blocks outside scripts. Only **Download PDF** loads a library from the internet when it is used.
+
 ## Targets
 
 Targets found in the Utilities Tracking and Daily Process Report files are used automatically. To override any of them, edit `data/targets.json` on GitHub (leave `null` to use the file's value). PM compliance is set to 70 and process loss to 5.50.
