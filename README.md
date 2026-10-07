@@ -46,17 +46,17 @@ Tips:
 
 ## Compare periods
 
-Comparisons open in their own **Compare** window (nothing is added to the dashboard page). Two ways to open it:
+Comparisons open in a **Compare** panel in the middle of the screen, over the dashboard (nothing is added to the page). Close it with **Done**, the **×**, the Esc key or by clicking outside it.
 
-- **Compare with…** next to the period filters: pick *Previous month*, *Same month last year* or *Another month…* (in Date view: *Previous day*, *Same day last year*, *Another date…*; in YTD view: *Last year* or *Another year…*). The window opens straight away on that comparison.
+Open it with:
+- **Compare with…** next to the period filters: *Previous month*, *Same month last year*, *Another month…* (Date view: *Previous day*, *Same day last year*, *Another date…*; YTD view: *Last year*, *Another year…*). If several months, dates or years are selected on the dashboard, *The selected … side by side* puts them all in the panel.
 - The **Compare** button at the top right.
 
-In the window:
-- **Quick comparisons**: This month vs last month · Last month vs the month before · This month vs same month last year · This year vs last year (the last two appear once last year's files are uploaded).
-- Or pick **Years / Months / Dates** and *Compare [period] with [period]*.
-- The blue line says how many KPIs got better or worse; values are green (on target), amber (within 5%) or red, and the Change column says *better* or *worse*. Click a KPI to chart it. **Copy table**, **Print**, **Refresh**, **Close window**.
-- A month or year still in progress is always compared like for like: the other period is cut to the same day.
-- If the browser blocks new windows, Compare opens inside the page instead. Allow pop-ups for the dashboard's address to get the separate window.
+In the panel:
+- **Years / Months / Dates**, then the periods as pills. **+ Add month** (or date, year) adds more, up to six; **×** removes one.
+- **Quick comparisons**: This month vs last month · Last month vs the month before · This month vs same month last year · This year vs last year.
+- The line under the title says how many KPIs got better or worse from the first period to the last. Values are green (on target), amber (within 5%) or red; the Change column says *better* or *worse*. Click a KPI to chart it. **Copy table** copies it for Excel or an email.
+- When the latest period is still running, the **Same days of each month / Same part of each year** switch (on by default) compares like for like. Turn it off to compare whole months.
 
 ## Targets
 
