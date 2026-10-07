@@ -1,5 +1,4 @@
-ERROR February_25_Utilities_Tracking.xlsx: Could not find the utility columns.
-ERROR January_25_Utilities_Tracking.xlsx: Could not find the utility columns.
+ERROR January_25_Utilities_Tracking.xlsx: the Utility Analysis figures look wrong for this month: electricity on one day is 296,936 kWh out of 304,662 for the month (looks like a meter reading); water is negative on 18 of 31 days. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.
 SKIP  CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: older copy of CBG OEE (Availability and Utilization) Calculation- 2026.xlsx (uploaded 2026-09-25); only the newest upload is read. Delete it from data/raw to tidy up.
 OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 7 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09); its figures replace the calculated ones for those months
 OK    FTR Calculations 2025.xlsx: FTR summary, 9 months (2025-01 to 2025-09)
@@ -10,9 +9,13 @@ OK    CBG OEE (Availability and Utilization) Calculation- 2026.xlsx: OEE summary
 OK    FTR Calculations 2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
 OK    Gross_Efficiency_2025.xlsx: Gross Efficiency, 241 days (2025-01-02 to 2025-12-31)
 OK    Gross_Efficiency_2026.xlsx: Gross Efficiency, 179 days (2026-01-02 to 2026-10-06)
+OK    February_25_Utilities_Tracking.xlsx: Utilities Tracking, 28 days (2025-02-01 to 2025-02-28)
 OK    March_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-03-01 to 2025-03-31)
+NOTE  March_25_Utilities_Tracking.xlsx: the production hl columns on the Utility Analysis sheet are empty, so production hl comes from the PROD.FIG. sheet.
 OK    April_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-04-01 to 2025-04-30)
+NOTE  April_25_Utilities_Tracking.xlsx: the production hl columns on the Utility Analysis sheet are empty, so production hl comes from the PROD.FIG. sheet.
 OK    May_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-05-01 to 2025-05-31)
+NOTE  May_25_Utilities_Tracking.xlsx: the production hl columns on the Utility Analysis sheet are empty, so production hl comes from the PROD.FIG. sheet.
 OK    June_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-06-01 to 2025-06-30)
 OK    July_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-07-01 to 2025-07-31)
 OK    August_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-08-01 to 2025-08-31)
@@ -41,7 +44,7 @@ OK    August '25 Daily Process Report 2025.xlsx: Daily Process Report, 18 days (
 OK    September '25 Daily Process Report 2025.xlsx: Daily Process Report, 22 days (2025-09-01 to 2025-09-30)
 OK    October '25 Daily Process Report 2025.xlsx: Daily Process Report, 22 days (2025-10-01 to 2025-10-31)
 OK    November '25 Daily Process Report 2025.xlsx: Daily Process Report, 23 days (2025-11-03 to 2025-11-28)
-OK    December '25 Daily Process Report 2025.xlsx: Daily Process Report, 25 days (2023-12-18 to 2025-12-31)
+OK    December '25 Daily Process Report 2025.xlsx: Daily Process Report, 24 days (2025-12-01 to 2025-12-31)
 OK    January__26_Daily_Process_Report_2026.xlsx: Daily Process Report, 22 days (2026-01-02 to 2026-01-30)
 OK    February__26_Daily_Process_Report_2026.xlsx: Daily Process Report, 20 days (2026-02-02 to 2026-02-27)
 OK    March_26_Daily_Process_Report_2026.xlsx: Daily Process Report, 24 days (2026-03-01 to 2026-03-31)
@@ -75,4 +78,5 @@ OK    July_2026.xls: Monthly process loss (volume), 1 month (2026-07 to 2026-07)
 OK    August_2026.xls: Monthly process loss (volume), 1 month (2026-08 to 2026-08)
 OK    September_2026.xls: Monthly process loss (volume), 1 month (2026-09 to 2026-09)
 OK    October_2026.xls: Monthly process loss (volume), 1 month (2026-10 to 2026-10)
+NOTE  February_25_Utilities_Tracking.xlsx: no production hl in this file (Utility Analysis and PROD.FIG. are empty), so the utility ratios use the bottled hl from the Gross Efficiency file (8,713 hl over 19 days).
 NOTE  FTR Calculations 2025.xlsx: no FTR figure for 2025-12 yet (the month's overall FTR cell is empty or shows an error), so the dashboard shows FTR up to 2025-09.
