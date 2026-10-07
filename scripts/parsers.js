@@ -40,7 +40,7 @@ function detectType(wb,fname=''){
 }
 // Gross Efficiency workbook: one sheet per month, one row per product run
 const KEG_CASES=2.75;   // cases per keg
-function parseGross(wb){
+function parseGross(wb,fname=''){
   const out={};
   for(const n of wb.SheetNames){
     const a=readSheet(wb.Sheets[n],300,40);
@@ -59,7 +59,8 @@ function parseGross(wb){
     // some months leave the "AVAIL." heading blank: it is the TIME column just before FILL
     if(C.avail==null&&C.fill>0&&/^TIME$/.test(comb(C.fill-1)))C.avail=C.fill-1;
     if(C.date==null||C.cases==null)continue;
-    const sm=monthFromText(n),sy=yearFromText(n.replace(/_206$/,'_2026'));
+    // the year: from the file name (Gross_Efficiency_2025.xlsx), else from the sheet name (January_2025)
+    const sm=monthFromText(n),sy=yearFromText(fname)||yearFromText(n.replace(/_206$/,'_2026'));
     for(let r=h+2;r<a.length;r++){
       const row=a[r];if(!row)continue;let ds=parseDate(row[C.date]);if(!ds)continue;
       // keep rows for the sheet's own month; fix a mistyped year (e.g. 2005 typed for 2026)
@@ -290,7 +291,7 @@ function parseKnown(wb,fname){
   if(t==='procvol')return {type:'Monthly process loss (volume)',...parseProcVol(wb,fname)};
   if(t==='oee')return {type:'OEE summary',...parseOEE(wb,fname)};
   if(t==='ftr')return {type:'FTR summary',...parseFTR(wb,fname)};
-  if(t==='gross')return {type:'Gross Efficiency',...parseGross(wb)};
+  if(t==='gross')return {type:'Gross Efficiency',...parseGross(wb,fname)};
   if(t==='util')return {type:'Utilities Tracking',...parseUtil(wb,fname)};
   if(t==='process')return {type:'Daily Process Report',...parseProcess(wb,fname)};
   return null;

@@ -176,9 +176,9 @@ for (const id of Object.keys(months)) {
 
 // Say so when the latest month with daily data has no FTR / OEE figure yet (the cell is blank or shows an error such as #DIV/0!)
 for (const [key, label, type] of [['ftrMtd', 'FTR', 'FTR summary'], ['oeeMtd', 'OEE', 'OEE summary']]) {
-  const src = parsed.filter(x => x.res.type === type && !x.skip);
-  if (!src.length) continue;
   for (const id of Object.values(lastMonth)) {
+    const src = parsed.filter(x => x.res.type === type && !x.skip && x.mids.some(m => m.slice(0, 4) === id.slice(0, 4)));
+    if (!src.length) continue;
     const k = months[id] && months[id].kpi;
     if (!k || k[key] == null) {
       const prev = Object.keys(months).filter(m => m < id && months[m].kpi && months[m].kpi[key] != null).sort().pop();
