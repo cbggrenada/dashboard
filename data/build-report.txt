@@ -1,9 +1,22 @@
+ERROR February_25_Utilities_Tracking.xlsx: Could not find the utility columns.
+ERROR January_25_Utilities_Tracking.xlsx: Could not find the utility columns.
 OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 7 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09); its figures replace the calculated ones for those months
 OK    PM_Compliance_Jan-Aug_2026.xlsx: PM compliance, 8 months (2026-01 to 2026-08)
 OK    CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: OEE summary, 9 months (2026-01 to 2026-09)
 OK    Finished PM Compliance.xlsx: PM compliance, 2 months (2026-08 to 2026-09)
 OK    FTR Calculations 2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
+OK    Gross_Efficiency_2025.xlsx: Gross Efficiency, 241 days (2025-01-02 to 2025-12-31)
 OK    Gross_Efficiency_2026.xlsx: Gross Efficiency, 179 days (2026-01-02 to 2026-10-06)
+OK    March_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-03-01 to 2025-03-31)
+OK    April_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-04-01 to 2025-04-30)
+OK    May_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-05-01 to 2025-05-31)
+OK    June_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-06-01 to 2025-06-30)
+OK    July_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-07-01 to 2025-07-31)
+OK    August_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-08-01 to 2025-08-31)
+OK    September_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-09-01 to 2025-09-30)
+OK    October_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-10-01 to 2025-10-31)
+OK    November_25_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2025-11-01 to 2025-11-30)
+OK    December_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-12-01 to 2025-12-31)
 OK    January_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-01-01 to 2026-01-31)
 OK    February_26_Utilities_Tracking.xlsx: Utilities Tracking, 28 days (2026-02-01 to 2026-02-28)
 OK    March_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-03-01 to 2026-03-31)
