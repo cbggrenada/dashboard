@@ -46,12 +46,14 @@ Tips:
 
 ## Compare periods
 
-Click **Compare** (top right). The window opens on what the dashboard is showing (a month against the month before, a date against the day before, otherwise this year against last year).
+Click **Compare** (top right). It opens a separate **Compare** window (the dashboard stays open behind it), starting on what the dashboard is showing: a month against the month before, a date against the day before, otherwise the latest comparison available.
 
 - **Quick comparisons** at the top do it in one click: this month so far vs last month, last month vs the month before, last month vs the same month last year, the last 3 months, this year vs last year, the latest day vs the day before.
 - Or choose your own: **Years / Months / Dates**, then *Compare [period] with [period]*. **+ another period** adds up to four.
-- The blue line says how many KPIs got better or worse. Each value is green (on target), amber (within 5%) or red, and the Change column says *better* or *worse*. Click a KPI to chart it. **Copy table** copies it for Excel or an email.
+- The blue line says how many KPIs got better or worse. Each value is green (on target), amber (within 5%) or red, and the Change column says *better* or *worse*. Click a KPI to chart it.
+- **Copy table** copies it for Excel or an email, **Print** prints it, and **Refresh** reloads the figures from the dashboard.
 - When the latest period is still running, **Same days of each month / Same part of each year** cuts the others to the same point so the comparison is fair.
+- If the browser blocks new windows, Compare opens inside the page instead. Allow pop-ups for the dashboard's address to get the separate window.
 
 ## Targets
 
