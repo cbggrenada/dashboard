@@ -210,12 +210,12 @@ const embed = html => html.replace(/\/\*CBG_DATA_START\*\/[\s\S]*?\/\*CBG_DATA_E
 const page = embed(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'));
 fs.writeFileSync(path.join(OUT, 'index.html'), page);
 fs.writeFileSync(path.join(OUT, 'data', 'dashboard-data.js'), js);
-// Also keep a copy in the repository itself, so the site works whether GitHub Pages
-// is set to "GitHub Actions" or to "Deploy from a branch".
+// Also keep a copy of the data in the repository (data/dashboard-data.*), which the page loads when hosted.
 fs.writeFileSync(path.join(ROOT, 'data', 'dashboard-data.json'), JSON.stringify(out));
 fs.writeFileSync(path.join(ROOT, 'data', 'build-report.txt'), report.join('\n') + '\n');
 fs.writeFileSync(path.join(ROOT, 'data', 'dashboard-data.js'), js);
-fs.writeFileSync(path.join(ROOT, 'index.html'), page);
+// index.html in the repository is left alone (only the published copy in _site gets the data built in),
+// so uploading a new index.html never clashes with the build.
 
 console.log(report.join('\n'));
 console.log(`\n${files.length} files read, ${dayCount} days of data, ${Object.keys(months).length} months.`);
