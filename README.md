@@ -55,7 +55,8 @@ Open it with:
 In the panel:
 - **Years / Months / Dates**, then the periods as pills. **+ Add month** (or date, year) adds more, up to six; **×** removes one.
 - **Quick comparisons**: This month vs last month · Last month vs the month before · This month vs same month last year · This year vs last year.
-- The line under the title says how many KPIs got better or worse from the first period to the last. Values are green (on target), amber (within 5%) or red; the Change column says *better* or *worse*. Click a KPI to chart it. **Copy table** copies it for Excel or an email.
+- The line under the title says how many KPIs got better or worse from the first period to the last. Values are green (on target), amber (within 5%) or red; the Change column says *better* or *worse*. Click a KPI to chart it.
+- **Email** opens a new email with the comparison written out; **Print** prints it on one landscape page; **Download PDF** saves it (title, coloured table and chart) as a PDF you can attach; **Copy table** copies it for Excel.
 - When the latest period is still running, the **Same days of each month / Same part of each year** switch (on by default) compares like for like. Turn it off to compare whole months.
 
 ## Targets
