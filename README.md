@@ -71,6 +71,23 @@ In the panel:
 - Printing, Download PDF and the Generate report output stay plain white.
 - The chart library is built into `index.html`, so the charts draw even where the internet blocks outside scripts. Only **Download PDF** loads a library from the internet when it is used.
 
+## Admin page (sign in on the website)
+
+Open **`<your site>/admin.html`**, or click the padlock at the top right of the dashboard. GitHub stays the master copy: everything you do on the admin page is saved to this repository as a normal commit, so you can still do the same things on github.com.
+
+What it does:
+- **Upload files.** Drag in the new Excel files and they go to `data/raw` in one commit. A file with the same name replaces the old one. The page then follows the rebuild and shows what the build made of each file.
+- **Data files.** Every file in `data/raw` with its status from the last build. You can download, replace (keeping the same name) or delete a file.
+- **Targets.** Edit `data/targets.json` in a form. An empty box means the target from the source files is used.
+- **Rebuild now, Activity and Build report.** Start a rebuild by hand, see recent changes and builds, and read `build-report.txt`.
+
+Signing in the first time on a device:
+1. On GitHub (signed in as the account that owns the repository) go to **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+2. Set the resource owner to the repository's owner, choose **Only select repositories → this repository**, and set **Contents: Read and write** and **Actions: Read and write**. Pick an expiry, for example 90 days.
+3. On the admin page, paste the token, check the repository name and choose a passcode.
+
+After that, only the passcode is needed on that device. The token is kept in that browser only, encrypted with the passcode; it is never saved in the repository. You are signed out after 30 minutes without activity. To sign in on another computer or phone, use a token again there. When the token expires, create a new one and choose **Use a different account** on the sign-in screen. If a device is lost, delete the token on GitHub and it stops working everywhere.
+
 ## Targets
 
 Targets found in the Utilities Tracking and Daily Process Report files are used automatically. To override any of them, edit `data/targets.json` on GitHub (leave `null` to use the file's value). PM compliance is set to 70 and process loss to 5.50.
