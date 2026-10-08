@@ -216,6 +216,8 @@ fs.copyFileSync(path.join(ROOT, 'index.html'), path.join(OUT, 'index.html'));
 fs.writeFileSync(path.join(OUT, 'data', 'dashboard-data.json'), JSON.stringify(out));
 fs.writeFileSync(path.join(OUT, 'data', 'build-report.txt'), report.join('\n') + '\n');
 fs.writeFileSync(path.join(OUT, '.nojekyll'), '');
+// the admin page (sign in to upload files and change targets from the website)
+if (fs.existsSync(path.join(ROOT, 'admin.html'))) fs.copyFileSync(path.join(ROOT, 'admin.html'), path.join(OUT, 'admin.html'));
 
 // Put a copy of the data inside index.html and in data/dashboard-data.js, so the page also works
 // when it is opened straight from a computer (browsers block reading .json files from disk).
