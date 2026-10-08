@@ -995,7 +995,9 @@ function agg(recs,raw,kind,opt){
     const md=id=>MONTHS_DATA[id]&&MONTHS_DATA[id].md;
     const put=(rec,f)=>{if(!rec)return;for(const [mk,ok] of Object.entries(MDK)){const v=rec[mk]&&rec[mk][f];if(v!=null)o[ok]=v}
       const er=rec.er&&rec.er[f];if(er!=null)o.brew=100-er};
-    if(ms.length===1&&md(ms[0])){put(md(ms[0]),'a');for(const k of ['oee','ftr','pm'])if(md(ms[0])[k]&&md(ms[0])[k].ya!=null)o[k+'Ytd']=md(ms[0])[k].ya;o.official='month'}
+    // only for the whole month: a single day (the daily charts, Date view) keeps its own figures
+    const wholeMonth=ms.length===1&&recs.length>1&&recs.length>=RECS.filter(r=>mid(r)===ms[0]).length;
+    if(wholeMonth&&md(ms[0])){put(md(ms[0]),'a');for(const k of ['oee','ftr','pm'])if(md(ms[0])[k]&&md(ms[0])[k].ya!=null)o[k+'Ytd']=md(ms[0])[k].ya;o.official='month'}
     else if(fullYTD){
       const L=[...ms].reverse().find(id=>md(id));
       if(L===ms[ms.length-1]){put(md(L),'ya');o.official='ytd'}
