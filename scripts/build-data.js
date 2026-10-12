@@ -22,6 +22,21 @@ function listFiles(dir) {
 }
 
 // When each file was last uploaded (its last commit), so the newest upload wins. Falls back to the file's date.
+// when each file in data/raw was last uploaded and by whom (from git), for the admin page's Data files list
+function fileInfo() {
+  const out = {};
+  try {
+    const ls = execFileSync('git', ['ls-files', '-s', '--', 'data/raw'], { cwd: ROOT, encoding: 'utf8' });
+    for (const line of ls.split('\n')) {
+      const m = line.match(/^\d+ ([0-9a-f]{40}) \d+\t(.+)$/); if (!m) continue;
+      const rel = m[2].replace(/^"|"$/g, ''), name = path.basename(rel);
+      if (rel.slice('data/raw/'.length).includes('/')) continue;
+      const lg = execFileSync('git', ['log', '-1', '--format=%ct%x09%an', '--', rel], { cwd: ROOT, encoding: 'utf8' }).trim().split('\t');
+      out[name] = { sha: m[1], t: lg[0] ? new Date(+lg[0] * 1000).toISOString() : null, by: lg[1] || '' };
+    }
+  } catch (e) { /* not a git checkout */ }
+  return out;
+}
 function uploadedAt(file) {
   try {
     const t = execFileSync('git', ['log', '-1', '--format=%ct', '--', path.relative(ROOT, file)], { cwd: ROOT, encoding: 'utf8' }).trim();
@@ -206,6 +221,7 @@ const dayCount = Object.values(months).reduce((n, m) => n + Object.keys(m.rows).
 const out = {
   generatedAt: new Date().toISOString(),
   files: files.map(f => path.relative(RAW, f)),
+  fileInfo: fileInfo(),
   targets,
   months: Object.fromEntries(Object.keys(months).sort().map(k => [k, months[k]])),
 };
@@ -214,6 +230,9 @@ fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(path.join(OUT, 'data'), { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'index.html'), path.join(OUT, 'index.html'));
 fs.writeFileSync(path.join(OUT, 'data', 'dashboard-data.json'), JSON.stringify(out));
+// lines from scripts/pull-linked.js (files downloaded from their online links just before this build)
+{ const pr = path.join(ROOT, 'data', 'pull-report.txt');
+  if (fs.existsSync(pr)) { report.unshift(...fs.readFileSync(pr, 'utf8').split('\n').filter(Boolean)); fs.rmSync(pr); } }
 fs.writeFileSync(path.join(OUT, 'data', 'build-report.txt'), report.join('\n') + '\n');
 fs.writeFileSync(path.join(OUT, '.nojekyll'), '');
 // the admin page (sign in to upload files and change targets from the website)
