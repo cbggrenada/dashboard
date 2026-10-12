@@ -144,6 +144,8 @@ dialog .row{justify-content:flex-end;margin-top:20px}
   .card{padding:18px 16px}
   td.hide-sm,th.hide-sm{display:none}
 }
+#flist td.act{white-space:normal;text-align:right;min-width:150px}#flist td.act .btn{margin:2px 0}
+#flist td:nth-child(3){white-space:nowrap}
 </style>
 </head>
 <body>
@@ -499,17 +501,31 @@ async function sendFiles(list,note,deleteOld){
 }
 
 /* ---------- files ---------- */
-let FILTER='';
+let FILTER='',FSORT='name',UPL={};
+/* when each file was uploaded: from the last build (data/dashboard-data.json), and straight from GitHub's history
+   for files uploaded since that build */
+async function loadUploads(){
+  UPL={};
+  try{const d=JSON.parse(await gh(R(`/contents/data/dashboard-data.json?ref=${S.branch}`),{accept:'application/vnd.github.raw+json'}));
+    const fi=d.fileInfo||{};for(const f of S.tree.files){const x=fi[f.name];if(x&&x.sha===f.sha&&x.t)UPL[f.name]={t:x.t,by:x.by}}}catch(e){}
+  const todo=S.tree.files.filter(f=>!UPL[f.name]);
+  for(let i=0;i<todo.length;i+=6)await Promise.all(todo.slice(i,i+6).map(async f=>{
+    try{const c=await gh(R(`/commits?sha=${S.branch}&path=${encodeURIComponent(f.path)}&per_page=1`));
+      if(c[0])UPL[f.name]={t:c[0].commit.author.date,by:c[0].author?c[0].author.login:c[0].commit.author.name}}catch(e){}}));
+}
+const fmtUpl=t=>{const d=new Date(t);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
 async function files(){
-  await Promise.all([loadTree(),loadReport()]);
+  await Promise.all([loadTree(),loadReport()]);await loadUploads();
   $('page').innerHTML=`<h2>Data files.</h2><p class="lead">Everything in ${RAW_DIR}, with what the last build made of each file.</p>
-    <div class="card glass"><div class="row" style="justify-content:space-between;margin-bottom:10px"><input class="input search" id="q" placeholder="Search files" value="${esc(FILTER)}"><button class="btn primary" onclick="go('upload')">Upload files</button></div><div id="flist"></div></div>`;
-  $('q').oninput=e=>{FILTER=e.target.value;drawFiles()};drawFiles();
+    <div class="card glass"><div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="row" style="flex-wrap:nowrap"><input class="input search" style="max-width:220px" id="q" placeholder="Search files" value="${esc(FILTER)}"><select class="input" id="fsort" style="width:auto;padding:9px 12px" aria-label="Sort"><option value="name">Sort by name</option><option value="new" ${FSORT==='new'?'selected':''}>Newest upload first</option><option value="old" ${FSORT==='old'?'selected':''}>Oldest upload first</option></select></span><button class="btn primary" onclick="go('upload')">Upload files</button></div><div id="flist"></div></div>`;
+  $('q').oninput=e=>{FILTER=e.target.value;drawFiles()};$('fsort').onchange=e=>{FSORT=e.target.value;drawFiles()};drawFiles();
 }
 function drawFiles(){
-  const q=FILTER.toLowerCase(),fs=S.tree.files.filter(f=>f.name.toLowerCase().includes(q));
-  $('flist').innerHTML=fs.length?`<div class="tblwrap"><table><tr><th>File</th><th>Status</th><th class="hide-sm" style="text-align:right">Size</th><th></th></tr>${fs.map(f=>{const st=fileStatus(f.name);
+  const q=FILTER.toLowerCase(),fs=S.tree.files.filter(f=>f.name.toLowerCase().includes(q)),ut=f=>UPL[f.name]?Date.parse(UPL[f.name].t):0;
+  if(FSORT!=='name')fs.sort((a,b)=>FSORT==='new'?ut(b)-ut(a):ut(a)-ut(b));
+  $('flist').innerHTML=fs.length?`<div class="tblwrap"><table><tr><th>File</th><th>Status</th><th>Uploaded</th><th class="hide-sm" style="text-align:right">Size</th><th></th></tr>${fs.map(f=>{const st=fileStatus(f.name);
     return `<tr><td><b>${esc(f.name)}</b>${st.ok?`<span class="msg">${esc(st.ok.msg)}</span>`:''}${st.msgs.map(m=>`<span class="msg">${esc(m)}</span>`).join('')}</td><td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td class="num" style="text-align:left" title="${UPL[f.name]?esc(fmtTime(UPL[f.name].t)):''}">${UPL[f.name]?`${fmtUpl(UPL[f.name].t)}${UPL[f.name].by?`<span class="msg">by ${esc(UPL[f.name].by)}</span>`:''}`:'–'}</td>
       <td class="num hide-sm">${fmtSize(f.size)}</td><td class="act"><button class="btn sm" data-dl="${esc(f.name)}">Download</button> <button class="btn sm" data-rep="${esc(f.name)}">Replace</button> <button class="btn sm danger" data-del="${esc(f.name)}">Delete</button></td></tr>`}).join('')}</table></div>`
     :'<p class="empty">No files match.</p>';
 }
