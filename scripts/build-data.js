@@ -131,6 +131,7 @@ for (const { name, res, days, mids, skip } of parsed) {
     if (v.vol) m.vol = v.vol;
     if (v.kpi) m.kpi = Object.assign(m.kpi || {}, v.kpi);
     if (v.targets) Object.assign(m.targets, v.targets);
+    if (v.plan) m.plan = v.plan;
   }
   if (res.md) {   // Ops KPIs MD report: the official month-to-date and year-to-date figures, a whole month at a time
     const byM = {};
@@ -180,7 +181,7 @@ for (const id of Object.keys(months)) if (Object.keys(months[id].rows).length) {
 for (const id of Object.keys(months)) {
   const m = months[id], y = id.slice(0, 4);
   if (lastMonth[y] && id > lastMonth[y]) { delete m.kpi; delete m.vol; }
-  if (!Object.keys(m.rows).length && !m.kpi && !m.vol && !m.md) delete months[id];
+  if (!Object.keys(m.rows).length && !m.kpi && !m.vol && !m.md && !m.plan) delete months[id];
 }
 
 // PM compliance year to date: the average of the monthly figures from January, as the SCTCM reports calculate it,

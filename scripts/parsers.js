@@ -29,6 +29,7 @@ function readSheet(ws,maxR=600,maxC=160){
 function detectType(wb,fname=''){
   const names=wb.SheetNames;
   if(names.some(n=>mdHeader(readSheet(wb.Sheets[n],15,40))))return 'md';
+  if(planSheet(wb))return 'plan';
   for(const n of names.slice(0,24)){const a=readSheet(wb.Sheets[n],40,30);if(a.some(r=>r&&r.some(c=>/%\s*completion/i.test(txt(c))))&&a.some(r=>r&&r.some(c=>/pm'?s\s*planned|^equipment$/i.test(txt(c)))))return 'pm'}
   if(names.some(n=>/^mtd$/i.test(n.trim()))){const a=readSheet(wb.Sheets[names.find(n=>/^mtd$/i.test(n.trim()))],20,10);if(a.some(r=>r&&r.some(c=>/^fv hls$/i.test(txt(c)))))return 'procvol'}
   if(names.some(n=>/^summary$/i.test(n.trim()))&&(/oee/i.test(fname)||names.some(n=>/utili[sz]ation/i.test(n))))return 'oee';
@@ -317,9 +318,38 @@ function parsePM(wb,fname){
     monthly[f.id]={kpi:{pmMtd:f.v,pmYtd:+(s.t/s.n).toFixed(3)}}}
   return {rows:{},targets:{},monthly};
 }
+/* ---- Production plan (cases): brands down the side, January to December across, with
+        "Total Domestic" (or "Total Production") and "Total Export" rows ---- */
+const MONTH_RE=/^(january|february|march|april|may|june|july|august|september|october|november|december)$/i;
+function planHeader(a){return a.findIndex(r=>r&&r.filter(c=>MONTH_RE.test(txt(c))).length>=12)}
+function planSheet(wb){
+  const pref=wb.SheetNames.filter(n=>/production plan\s*org/i.test(n)).concat(wb.SheetNames.filter(n=>/production plan/i.test(n)),wb.SheetNames.slice(0,6));
+  for(const n of pref){const a=readSheet(wb.Sheets[n],80,30);const h=planHeader(a);if(h<0)continue;
+    if(a.some(r=>r&&/^total (domestic|producti)/i.test(txt(r[0])))&&/^cases$/i.test(txt((a[h]||[])[0])||''))return n}
+  return null;
+}
+function parsePlan(wb,fname){
+  const sn=planSheet(wb),a=readSheet(wb.Sheets[sn],80,30),h=planHeader(a);
+  let yr=yearFromText(fname)||yearFromText(sn);
+  if(!yr)for(const n of wb.SheetNames){const t=readSheet(wb.Sheets[n],4,20).flat().map(txt).join(' ');const y=t.match(/(?:forecast|plan|production for)\D{0,12}(20\d{2})/i);if(y){yr=+y[1];break}}
+  if(!yr)throw new Error('Could not tell which year this production plan is for (put the year in the file name).');
+  const cols=[];a[h].forEach((c,i)=>{const m=MONTH_RE.test(txt(c))?monthFromText(txt(c)):null;if(m!=null&&!cols.some(x=>x.m===m))cols.push({m,i})});
+  const rowOf=re=>a.find(r=>r&&re.test(txt(r[0])));
+  const tot=rowOf(/^total producti/i),dom=rowOf(/^total domestic/i)||tot,exp=rowOf(/^total export/i);
+  // brands: the rows between the header and the domestic total, skipping subtotals
+  const brands={};const end=a.indexOf(dom);
+  for(let r=h+1;r<end;r++){const row=a[r]||[],b=txt(row[0]);if(!b||/^(local brewed|soft drinks|total)/i.test(b))continue;
+    const v=cols.map(c=>num(row[c.i])||0);if(v.some(x=>x))brands[b]=v}
+  const monthly={};
+  for(const c of cols){const d=num(dom[c.i])||0,e=exp&&dom!==tot?num(exp[c.i])||0:0,T=tot&&dom!==tot?num(tot[c.i])||d+e:d+e;if(!T)continue;
+    const id=`${yr}-${String(c.m+1).padStart(2,'0')}`;
+    monthly[id]={targets:{cases:T},plan:{cases:T,dom:d,exp:e,sheet:sn,brands:Object.fromEntries(Object.entries(brands).map(([b,v])=>[b,v[cols.indexOf(c)]]).filter(([,x])=>x))}}}
+  return {rows:{},targets:{},monthly};
+}
 function parseKnown(wb,fname){
   const t=detectType(wb,fname);
   if(t==='md')return {type:'Ops KPIs MD report',rows:{},targets:{},md:parseMdReport(wb,fname)};
+  if(t==='plan')return {type:'Production plan',...parsePlan(wb,fname)};
   if(t==='pm')return {type:'PM compliance',...parsePM(wb,fname)};
   if(t==='procvol')return {type:'Monthly process loss (volume)',...parseProcVol(wb,fname)};
   if(t==='oee')return {type:'OEE summary',...parseOEE(wb,fname)};
