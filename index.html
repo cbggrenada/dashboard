@@ -801,10 +801,7 @@ body::before{background:
 .panel.lit::after{opacity:.55}.panel.lit::before{opacity:.85}
 :root[data-theme="dark"] .tile::after,:root[data-theme="dark"] .panel::after{filter:opacity(.5)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile::after,:root:not([data-theme="light"]) .panel::after{filter:opacity(.5)}}
-/* the wiggle */
-@keyframes cbgWiggle{0%{rotate:0deg;translate:0 0}15%{rotate:-2.2deg;translate:-2px 0}30%{rotate:1.9deg;translate:2px -1px}45%{rotate:-1.3deg;translate:-1px 0}60%{rotate:.9deg;translate:1px 0}75%{rotate:-.4deg}100%{rotate:0deg;translate:0 0}}
-.tile.wig{animation:cbgWiggle .55s cubic-bezier(.36,.07,.19,.97)}
-@media (prefers-reduced-motion:reduce){.tile.wig{animation:none}.tile{transform:none!important}}
+@media (prefers-reduced-motion:reduce){.tile{transform:none!important}}
 @media print{.tile::before,.tile::after,.panel::before,.panel::after{display:none!important}.tile{transform:none!important}}
 
 
@@ -2133,7 +2130,7 @@ function cur(){var t=document.documentElement.getAttribute('data-theme');if(t)re
 function lab(){b.setAttribute('aria-label',cur()==='dark'?'Switch to light mode':'Switch to dark mode');b.title=cur()==='dark'?'Light mode':'Dark mode'}
 b.addEventListener('click',function(){var n=cur()==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('cbg-theme',n)}catch(e){}lab()});lab()})();</script><script>(function(){
 var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,cur=null,raf=0,last=null;
-function wiggle(el){if(reduce)return;el.classList.remove('wig');void el.offsetWidth;el.classList.add('wig')}
+function wiggle(el){}
 function aim(el,x,y){var r=el.getBoundingClientRect(),px=(x-r.left)/r.width,py=(y-r.top)/r.height;
   px=Math.max(0,Math.min(1,px));py=Math.max(0,Math.min(1,py));var s=el.style;
   s.setProperty('--mx',(px*100).toFixed(1)+'%');s.setProperty('--my',(py*100).toFixed(1)+'%');
