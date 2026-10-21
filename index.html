@@ -804,6 +804,8 @@ body::before{background:
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile::after,:root:not([data-theme="light"]) .panel::after{filter:opacity(.5)}}
 @media (prefers-reduced-motion:reduce){.tile{transform:none!important}}
 @media print{.tile::before,.tile::after,.panel::before,.panel::after{display:none!important}.tile{transform:none!important}}
+/* no sheen across the face of the card: the light only travels round the border */
+.tile::after,.tile.good::after,.tile.bad::after,.tile.warn::after,.tile.lit::after,.panel::after,.panel.lit::after{background:none!important;opacity:0!important}
 
 
 /* year / month / date lists: solid enough to read over the cards behind them */
