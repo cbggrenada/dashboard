@@ -781,11 +781,12 @@ body::before{background:
   radial-gradient(28% 26% at 30% 55%,rgba(175,82,222,.28),transparent 72%),
   linear-gradient(160deg,#d6e4f4,#e8eef7 45%,#d9e5f4)!important}
 
-/* ===== hover / tap: wiggle, tilt and a light that refracts across the glass (Aero-style) ===== */
+/* ===== hover / tap: a light that refracts across the glass (cards stay still) ===== */
+.tile,.tile:hover,.tile.good:hover,.tile.bad:hover,.tile.warn:hover,.tile.lit{transform:none!important;translate:none!important;rotate:none!important}
 .panel{position:relative}
 .tile,.panel{--mx:50%;--my:30%;--sx:50%;--ang:200deg;--rx:0deg;--ry:0deg;isolation:isolate}
 .tile{transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--lift,0px));transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
-.tile.lit{--lift:-3px;transition:transform .08s linear,box-shadow .3s}
+
 .tile:hover,.tile.good:hover,.tile.bad:hover,.tile.warn:hover{transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(var(--lift,0px))}
 /* the glare: a soft hotspot under the pointer plus Aero's diagonal light streaks that slide with it */
 .tile::after,.tile.good::after,.tile.bad::after,.tile.warn::after,.panel::after{content:"";display:block!important;position:absolute;inset:0!important;width:auto!important;height:auto!important;border-radius:inherit!important;pointer-events:none;z-index:2;opacity:0;transition:opacity .35s;
@@ -2136,7 +2137,7 @@ function aim(el,x,y){var r=el.getBoundingClientRect(),px=(x-r.left)/r.width,py=(
   s.setProperty('--mx',(px*100).toFixed(1)+'%');s.setProperty('--my',(py*100).toFixed(1)+'%');
   s.setProperty('--sx',(px*120-10).toFixed(1)+'%');
   s.setProperty('--ang',(Math.atan2(py-.5,px-.5)*180/Math.PI+90-310).toFixed(1)+'deg');
-  if(el.classList.contains('tile')&&!reduce){s.setProperty('--rx',((.5-py)*9).toFixed(2)+'deg');s.setProperty('--ry',((px-.5)*11).toFixed(2)+'deg')}}
+  }
 function off(el){if(!el)return;el.classList.remove('lit');el.style.setProperty('--rx','0deg');el.style.setProperty('--ry','0deg')}
 document.addEventListener('pointermove',function(e){if(e.pointerType==='touch')return;last=e;if(raf)return;raf=requestAnimationFrame(function(){raf=0;var e=last,el=e.target.closest&&e.target.closest('.tile,.panel');
   if(el!==cur){off(cur);cur=el;if(el){el.classList.add('lit');if(el.classList.contains('tile'))wiggle(el)}}
