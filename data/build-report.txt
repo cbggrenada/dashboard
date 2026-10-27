@@ -1,3 +1,4 @@
+SKIP  GBL_Line_Downtime_2026.xlsx: not a file type the dashboard reads
 ERROR January_25_Utilities_Tracking.xlsx: the Utility Analysis figures look wrong for this month: electricity on one day is 296,936 kWh out of 304,662 for the month (looks like a meter reading); water is negative on 18 of 31 days. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.
 SKIP  CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: older copy of CBG OEE (Availability and Utilization) Calculation- 2026.xlsx (uploaded 2026-09-25); only the newest upload is read. Delete it from data/raw to tidy up.
 OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 7 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09); its figures replace the calculated ones for those months
@@ -6,8 +7,8 @@ OK    CBG OEE (Availability and Utilization) Calculation- 2025.xlsx: OEE summary
 OK    PM_Compliance_Jan-Aug_2026.xlsx: PM compliance, 8 months (2026-01 to 2026-08)
 OK    Finished PM Compliance.xlsx: PM compliance, 3 months (2026-08 to 2026-10)
 OK    CBG OEE (Availability and Utilization) Calculation- 2026.xlsx: OEE summary, 10 months (2026-01 to 2026-10)
-OK    FTR Calculations 2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
 OK    Production_Plan_Cases_2026.xlsx: Production plan, 12 months (2026-01 to 2026-12)
+OK    FTR Calculations 2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
 OK    Gross_Efficiency_2025.xlsx: Gross Efficiency, 241 days (2025-01-02 to 2025-12-31)
 OK    Gross_Efficiency_2026.xlsx: Gross Efficiency, 189 days (2026-01-02 to 2026-10-21)
 OK    February_25_Utilities_Tracking.xlsx: Utilities Tracking, 28 days (2025-02-01 to 2025-02-28)
@@ -33,7 +34,7 @@ OK    June_26_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2026-06-01 t
 OK    July_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-07-01 to 2026-07-31)
 OK    August_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-08-01 to 2026-08-31)
 OK    September_26_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2026-09-01 to 2026-09-30)
-OK    October_26_Utilities_Tracking.xlsx: Utilities Tracking, 21 days (2026-10-01 to 2026-10-21)
+OK    October_26_Utilities_Tracking.xlsx: Utilities Tracking, 23 days (2026-10-01 to 2026-10-23)
 OK    January'25 Daily Process Report 2025.xlsx: Daily Process Report, 18 days (2025-01-02 to 2025-01-31)
 OK    February'25 Daily Process Report 2025.xlsx: Daily Process Report, 20 days (2025-02-03 to 2025-02-28)
 OK    March'25 Daily Process Report 2025.xlsx: Daily Process Report, 21 days (2025-03-03 to 2025-03-31)
