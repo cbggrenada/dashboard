@@ -133,7 +133,10 @@ function parseUtil(wb,fname){
   // Utility Analysis sheet is broken for this month: report it instead of putting wrong ratios on the dashboard
   {const vals=k=>Object.values(rows).map(r=>r[k]||0),sum=k=>vals(k).reduce((x,y)=>x+y,0);
     const bad=[];const e=vals('elec'),te=sum('elec');
-    if(te>0&&Math.max(...e)>0.5*te)bad.push(`electricity on one day is ${Math.round(Math.max(...e)).toLocaleString('en-US')} kWh out of ${Math.round(te).toLocaleString('en-US')} for the month (looks like a meter reading)`);
+    // a meter reading typed as one day's usage: that day is over half the month AND far above every other day
+    // (a part month with only a day or two of data has normal days that are each a big share of the total)
+    const eo=[...e].sort((x,y)=>x-y),emax=eo[eo.length-1],erest=eo.slice(0,-1).filter(x=>x>0),emed=erest.length?erest[Math.floor(erest.length/2)]:0;
+    if(te>0&&emax>0.5*te&&erest.length>=2&&emax>10*emed)bad.push(`electricity on one day is ${Math.round(Math.max(...e)).toLocaleString('en-US')} kWh out of ${Math.round(te).toLocaleString('en-US')} for the month (looks like a meter reading)`);
     const w=vals('water'),neg=w.filter(x=>x<0).length;
     if(sum('water')<=0||neg>w.length/3)bad.push(`water is negative on ${neg} of ${w.length} days`);
     if(bad.length)throw new Error(`the Utility Analysis figures look wrong for this month: ${bad.join('; ')}. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.`);}
@@ -142,7 +145,8 @@ function parseUtil(wb,fname){
   {const fn=wb.SheetNames.find(n=>/^fuel$/i.test(n.trim()));const af=fn?autoFlameFuel(readSheet(wb.Sheets[fn],200,30)):null;
     if(af){const main={};for(const [ds,r] of Object.entries(rows)){const d=+ds.slice(8);main[d]=(main[d]||0)+(r.fuel||0)}
       const n=stuckMeterDays(main,af);
-      if(n>=AF_MIN_DAYS){let t=0,was=0;for(const r of Object.values(rows)){was+=r.fuel||0;r.fuel=0}
+      // switch after 3 such days, or straight away when the main meter has no fuel at all so far this month
+      if(n>=AF_MIN_DAYS||(n>=1&&!Object.values(main).some(v=>v>0))){let t=0,was=0;for(const r of Object.values(rows)){was+=r.fuel||0;r.fuel=0}
         for(const [d,v] of Object.entries(af)){const ds=dstr(yr,mo,Math.min(+d,last));const rec=rows[ds]||(rows[ds]={elec:0,water:0,fuel:0,co2:0,utilHl:0});rec.fuel=+((rec.fuel||0)+v).toFixed(4);t+=v}
         fuelMeter={days:n,litres:Math.round(t),main:Math.round(was)}}}}
   // some files (e.g. early 2025) never had the production columns filled in on Utility Analysis:
