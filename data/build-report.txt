@@ -35,6 +35,7 @@ OK    July_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-07-01 t
 OK    August_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-08-01 to 2026-08-31)
 OK    September_26_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2026-09-01 to 2026-09-30)
 OK    October_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-10-01 to 2026-10-31)
+NOTE  October_26_Utilities_Tracking.xlsx: the main boiler fuel meter ("Boilers tot." on the Entries sheet) shows no fuel on 27 days that the Auto Flame meter shows the boiler running, so this month's fuel comes from the Auto Flame meter (68,819 L, against 1,352 L on the main meter). Fill in the main meter readings and upload the file again to go back to the main meter.
 OK    January'25 Daily Process Report 2025.xlsx: Daily Process Report, 18 days (2025-01-02 to 2025-01-31)
 OK    February'25 Daily Process Report 2025.xlsx: Daily Process Report, 20 days (2025-02-03 to 2025-02-28)
 OK    March'25 Daily Process Report 2025.xlsx: Daily Process Report, 21 days (2025-03-03 to 2025-03-31)
