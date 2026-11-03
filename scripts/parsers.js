@@ -78,6 +78,23 @@ function parseGross(wb,fname=''){
     if(!Object.values(r).some(v=>v))delete out[ds]}
   return {rows:out,targets:{}};
 }
+// Fuel sheet: from September 2026 the boiler also has an Auto Flame (AF Control) meter beside the main "Boilers tot." meter.
+// If the main meter stops being read (no fuel on days the Auto Flame meter shows the boiler burning), that month's fuel is
+// taken from the Auto Flame meter instead, so a missed meter reading doesn't show up as a month with almost no fuel.
+const AF_MIN_DAYS=3;
+const AF_RE=/af\s*control|auto\s*flame/i;
+function autoFlameFuel(a){
+  const h=(a||[]).findIndex(r=>r&&txt(r[0]).toUpperCase()==='DATE'&&r.some(c=>AF_RE.test(txt(c))));
+  if(h<0)return null;
+  const j=a[h].findIndex(c=>AF_RE.test(txt(c)));
+  const out={};let seen=false;
+  for(let r=h+1;r<a.length;r++){const row=a[r]||[];const d=num(row[0]);
+    if(d==null||d<1||d>31||d%1){if(seen&&txt(row[0]))break;continue}
+    seen=true;const v=num(row[j]);if(v>0)out[d]=(out[d]||0)+v}
+  return Object.keys(out).length?out:null;
+}
+// days the Auto Flame meter shows fuel burnt (over 50 L) but the main meter shows none
+function stuckMeterDays(main,af){let n=0;for(const [d,v] of Object.entries(af))if(v>50&&!(main[d]>0))n++;return n}
 // Utilities Tracking workbook: "Utility Analysis <Month> <Year>" has one row per day of the month
 function parseUtil(wb,fname){
   const rows={},targets={};
@@ -120,6 +137,14 @@ function parseUtil(wb,fname){
     const w=vals('water'),neg=w.filter(x=>x<0).length;
     if(sum('water')<=0||neg>w.length/3)bad.push(`water is negative on ${neg} of ${w.length} days`);
     if(bad.length)throw new Error(`the Utility Analysis figures look wrong for this month: ${bad.join('; ')}. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.`);}
+  // main boiler meter not read: use the Auto Flame meter for this month's fuel
+  let fuelMeter=null;
+  {const fn=wb.SheetNames.find(n=>/^fuel$/i.test(n.trim()));const af=fn?autoFlameFuel(readSheet(wb.Sheets[fn],200,30)):null;
+    if(af){const main={};for(const [ds,r] of Object.entries(rows)){const d=+ds.slice(8);main[d]=(main[d]||0)+(r.fuel||0)}
+      const n=stuckMeterDays(main,af);
+      if(n>=AF_MIN_DAYS){let t=0,was=0;for(const r of Object.values(rows)){was+=r.fuel||0;r.fuel=0}
+        for(const [d,v] of Object.entries(af)){const ds=dstr(yr,mo,Math.min(+d,last));const rec=rows[ds]||(rows[ds]={elec:0,water:0,fuel:0,co2:0,utilHl:0});rec.fuel=+((rec.fuel||0)+v).toFixed(4);t+=v}
+        fuelMeter={days:n,litres:Math.round(t),main:Math.round(was)}}}}
   // some files (e.g. early 2025) never had the production columns filled in on Utility Analysis:
   // take the daily production hl from the PROD.FIG. sheet instead (same figures when both are filled in)
   let prodSrc='Utility Analysis';
@@ -150,7 +175,7 @@ function parseUtil(wb,fname){
         else if(/^electricity \(kwh\.\/hl\.\)/.test(lab))targets.elec=v;
         else if(/^fuel \(l\/hl\.\)/.test(lab))targets.fuel=v;}
     }}
-  return {rows,targets,month:dstr(yr,mo,1).slice(0,7),prodSrc};
+  return {rows,targets,month:dstr(yr,mo,1).slice(0,7),prodSrc,fuelMeter};
 }
 // Daily Process Report workbook: one sheet per report day
 function parseProcess(wb,fname){
@@ -435,4 +460,4 @@ function buildGeneric(sh){
   return out;
 }
 
-module.exports={XLSX,detectType,parseKnown,analyzeSheet,buildGeneric,parseDate,parseMdReport};
+module.exports={XLSX,detectType,parseKnown,analyzeSheet,buildGeneric,parseDate,parseMdReport,autoFlameFuel,stuckMeterDays,AF_MIN_DAYS};

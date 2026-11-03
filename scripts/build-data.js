@@ -150,6 +150,11 @@ for (const { name, res, days, mids, skip } of parsed) {
   report.push(`OK    ${name}: ${res.type}, ` + (mids.length && !days.length
     ? `${mids.length} month${mids.length > 1 ? 's' : ''} (${mids[0]} to ${mids[mids.length - 1]})`
     : `${days.length} days${days.length ? ` (${days[0]} to ${days[days.length - 1]})` : ''}`));
+  if (res.type === 'Utilities Tracking' && res.fuelMeter) {
+    const fm = res.fuelMeter, m = months[res.month];
+    if (m) m.fuelMeter = 'Auto Flame';
+    report.push(`NOTE  ${name}: the main boiler fuel meter ("Boilers tot." on the Entries sheet) shows no fuel on ${fm.days} days that the Auto Flame meter shows the boiler running, so this month's fuel comes from the Auto Flame meter (${fm.litres.toLocaleString('en-US')} L, against ${fm.main.toLocaleString('en-US')} L on the main meter). Fill in the main meter readings and upload the file again to go back to the main meter.`);
+  }
   if (res.type === 'Utilities Tracking' && res.prodSrc === 'PROD.FIG.') report.push(`NOTE  ${name}: the production hl columns on the Utility Analysis sheet are empty, so production hl comes from the PROD.FIG. sheet.`);
   if (res.type === 'Utilities Tracking' && res.prodSrc === null && res.month) noProdHl.push([res.month, name]);
 }
