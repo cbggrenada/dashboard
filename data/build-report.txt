@@ -1,6 +1,5 @@
 SKIP  GBL_Line_Downtime_2026.xlsx: not a file type the dashboard reads
 ERROR January_25_Utilities_Tracking.xlsx: the Utility Analysis figures look wrong for this month: electricity on one day is 296,936 kWh out of 304,662 for the month (looks like a meter reading); water is negative on 18 of 31 days. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.
-ERROR November_26_Utilities_Tracking.xlsx: the Utility Analysis figures look wrong for this month: electricity on one day is 6,019 kWh out of 11,898 for the month (looks like a meter reading). Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.
 SKIP  CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: older copy of CBG OEE (Availability and Utilization) Calculation- 2026.xlsx (uploaded 2026-09-25); only the newest upload is read. Delete it from data/raw to tidy up.
 OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 7 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09); its figures replace the calculated ones for those months
 OK    FTR Calculations 2025.xlsx: FTR summary, 9 months (2025-01 to 2025-09)
@@ -37,6 +36,8 @@ OK    August_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-08-01
 OK    September_26_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2026-09-01 to 2026-09-30)
 OK    October_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-10-01 to 2026-10-31)
 NOTE  October_26_Utilities_Tracking.xlsx: the main boiler fuel meter ("Boilers tot." on the Entries sheet) shows no fuel on 27 days that the Auto Flame meter shows the boiler running, so this month's fuel comes from the Auto Flame meter (68,819 L, against 1,352 L on the main meter). Fill in the main meter readings and upload the file again to go back to the main meter.
+OK    November_26_Utilities_Tracking.xlsx: Utilities Tracking, 2 days (2026-11-01 to 2026-11-02)
+NOTE  November_26_Utilities_Tracking.xlsx: the main boiler fuel meter ("Boilers tot." on the Entries sheet) shows no fuel on 2 days that the Auto Flame meter shows the boiler running, so this month's fuel comes from the Auto Flame meter (4,239 L, against 0 L on the main meter). Fill in the main meter readings and upload the file again to go back to the main meter.
 OK    November'26 Daily Process Report 2026.xlsx: Daily Process Report, 0 days
 OK    January'25 Daily Process Report 2025.xlsx: Daily Process Report, 18 days (2025-01-02 to 2025-01-31)
 OK    February'25 Daily Process Report 2025.xlsx: Daily Process Report, 20 days (2025-02-03 to 2025-02-28)
