@@ -2,7 +2,7 @@ SKIP  GBL_Line_Downtime_2026.xlsx: not a file type the dashboard reads
 ERROR January_25_Utilities_Tracking.xlsx: the Utility Analysis figures look wrong for this month: electricity on one day is 296,936 kWh out of 304,662 for the month (looks like a meter reading); water is negative on 18 of 31 days. Fix the sheet (or its links) and upload it again; this month's utilities are left off the dashboard until then.
 SKIP  CBG_OEE__Availability_and_Utilization__Calculation-_2026.xlsx: older copy of CBG OEE (Availability and Utilization) Calculation- 2026.xlsx (uploaded 2026-09-25); only the newest upload is read. Delete it from data/raw to tidy up.
 SKIP  CBG OEE (Availability and Utilization) Calculation- 2026.xlsx: older copy of CBG OEE Availability and Utilization Calculation- 2026.xlsx (uploaded 2026-11-05); only the newest upload is read. Delete it from data/raw to tidy up.
-OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 7 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09); its figures replace the calculated ones for those months
+OK    Ops KPIs 2026 MD Report new format.xlsx: Ops KPIs MD report, 8 months (2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09, 2026-10); its figures replace the calculated ones for those months
 OK    FTR Calculations 2025.xlsx: FTR summary, 9 months (2025-01 to 2025-09)
 OK    CBG OEE (Availability and Utilization) Calculation- 2025.xlsx: OEE summary, 12 months (2025-01 to 2025-12)
 OK    PM_Compliance_Jan-Aug_2026.xlsx: PM compliance, 8 months (2026-01 to 2026-08)
