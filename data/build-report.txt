@@ -11,7 +11,7 @@ OK    Finished PM Compliance.xlsx: PM compliance, 4 months (2026-08 to 2026-11)
 OK    Production_Plan_Cases_2026.xlsx: Production plan, 12 months (2026-01 to 2026-12)
 OK    FTR Calculations 2026.xlsx: FTR summary, 12 months (2026-01 to 2026-12)
 OK    Gross_Efficiency_2025.xlsx: Gross Efficiency, 241 days (2025-01-02 to 2025-12-31)
-OK    Gross_Efficiency_2026.xlsx: Gross Efficiency, 199 days (2026-01-02 to 2026-11-09)
+OK    Gross_Efficiency_2026.xlsx: Gross Efficiency, 201 days (2026-01-02 to 2026-11-11)
 OK    February_25_Utilities_Tracking.xlsx: Utilities Tracking, 28 days (2025-02-01 to 2025-02-28)
 OK    March_25_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2025-03-01 to 2025-03-31)
 NOTE  March_25_Utilities_Tracking.xlsx: the production hl columns on the Utility Analysis sheet are empty, so production hl comes from the PROD.FIG. sheet.
@@ -37,8 +37,7 @@ OK    August_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-08-01
 OK    September_26_Utilities_Tracking.xlsx: Utilities Tracking, 30 days (2026-09-01 to 2026-09-30)
 OK    October_26_Utilities_Tracking.xlsx: Utilities Tracking, 31 days (2026-10-01 to 2026-10-31)
 NOTE  October_26_Utilities_Tracking.xlsx: the main boiler fuel meter ("Boilers tot." on the Entries sheet) shows no fuel on 27 days that the Auto Flame meter shows the boiler running, so this month's fuel comes from the Auto Flame meter (68,819 L, against 1,352 L on the main meter). Fill in the main meter readings and upload the file again to go back to the main meter.
-OK    November_26_Utilities_Tracking.xlsx: Utilities Tracking, 9 days (2026-11-01 to 2026-11-09)
-NOTE  November_26_Utilities_Tracking.xlsx: the main boiler fuel meter ("Boilers tot." on the Entries sheet) shows no fuel on 5 days that the Auto Flame meter shows the boiler running, so this month's fuel comes from the Auto Flame meter (11,265 L, against 0 L on the main meter). Fill in the main meter readings and upload the file again to go back to the main meter.
+OK    November_26_Utilities_Tracking.xlsx: Utilities Tracking, 10 days (2026-11-01 to 2026-11-10)
 OK    January'25 Daily Process Report 2025.xlsx: Daily Process Report, 18 days (2025-01-02 to 2025-01-31)
 OK    February'25 Daily Process Report 2025.xlsx: Daily Process Report, 20 days (2025-02-03 to 2025-02-28)
 OK    March'25 Daily Process Report 2025.xlsx: Daily Process Report, 21 days (2025-03-03 to 2025-03-31)
