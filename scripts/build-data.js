@@ -201,6 +201,12 @@ for (const id of Object.keys(months)) { const md = months[id].md; if (md && md.p
   }
 }
 
+// Production Plan workbook: its monthly cases budget wins over the "Monthly Target" typed into the Utilities
+// Tracking file (that cell is often left over from the month the tracker was copied from)
+for (const id of Object.keys(months)) {
+  const p = months[id].plan; if (p && p.cases) months[id].targets.cases = p.cases;
+}
+
 // Ops KPIs MD report: its OEE, FTR and PM compliance and its budgets replace those from the other files for the months it covers
 for (const id of Object.keys(months)) {
   const md = months[id].md; if (!md) continue;
