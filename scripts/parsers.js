@@ -294,7 +294,7 @@ function pctRow(rw,cols){
   for(const k in raw){const p=asFrac?(raw[k]<=1.5?raw[k]*100:null):raw[k];if(p!=null&&p>0&&p<=100)out[k]=+p.toFixed(3)}
   return out;
 }
-function kpiTable(a,label,fname,key){
+function kpiTable(a,label,fname,key,fill){
   const yr=yearFromText(fname);if(yr==null)throw new Error('Put the year in the file name, e.g. ..._2026.xlsx');
   const lab=r=>(a[r]||[]).slice(0,4).map(txt).map(t=>t.toLowerCase());
   const mr=a.findIndex((r,i)=>lab(i).includes('mtd')&&lab(i+1).includes('ytd'));
@@ -302,6 +302,12 @@ function kpiTable(a,label,fname,key){
   let hr=-1;for(let i=mr-1;i>=0&&i>=mr-12;i--){if(Object.keys(monthCols(a[i])).length>=6){hr=i;break}}
   if(hr<0)throw new Error(`Could not find the month headings for ${label}.`);
   const cols=monthCols(a[hr]),mtd=pctRow(a[mr],cols),ytd=pctRow(a[mr+1],cols);
+  // a month whose overall MTD cell is blank or an error (#DIV/0!) is worked out from the detail instead, when the workbook has it;
+  // its YTD is then the average of the monthly figures from January, as the workbook's own YTD row does
+  const filled=[];
+  if(fill){const yr0=yearFromText(fname);for(const m in cols){if(mtd[m]!=null)continue;const v=fill(+m);if(v!=null&&v>0&&v<=100){mtd[m]=+v.toFixed(3);filled.push(+m)}}
+    for(const m of filled){const prior=[];for(let i=0;i<=m;i++)if(mtd[i]!=null)prior.push(mtd[i]);if(ytd[m]==null&&prior.length)ytd[m]=+(prior.reduce((x,y)=>x+y,0)/prior.length).toFixed(3)}
+    void yr0}
   let target=null;
   const tc=(a[hr]||[]).findIndex(c=>/^target$/i.test(txt(c)));
   if(tc>=0){const v=num(a[mr][tc]);if(v!=null)target=v<=1.5?v*100:v}
@@ -310,16 +316,27 @@ function kpiTable(a,label,fname,key){
   for(let m=0;m<12;m++){if(mtd[m]==null&&ytd[m]==null)continue;const id=dstr(yr,m,1).slice(0,7);
     monthly[id]={kpi:{[key+'Mtd']:mtd[m]??null,[key+'Ytd']:ytd[m]??(m===0?mtd[m]:null)}};
     if(target!=null)monthly[id].targets={[key]:+target.toFixed(3)}}
-  return {rows:{},targets:target!=null?{[key]:target}:{},monthly};
+  return {rows:{},targets:target!=null?{[key]:target}:{},monthly,filled:filled.map(m=>dstr(yr,m,1).slice(0,7))};
 }
 function parseOEE(wb,fname){
   const sn=wb.SheetNames.find(n=>/^summary$/i.test(n.trim()));const a=readSheet(wb.Sheets[sn],80,30);
   const top=a.findIndex(r=>r&&r.slice(0,4).some(c=>/^oee$/i.test(txt(c))));
-  return kpiTable(top>=0?a.slice(top):a,'OEE',fname,'oee');
+  // fallback: the month's own sheet (e.g. "November 2026 (w Utilization)") has the OEE under its Total row
+  const fromSheet=m=>{const n=wb.SheetNames.find(x=>x!==sn&&monthFromText(x)===m&&/utili[sz]ation|oee/i.test(x)&&(yearFromText(x)==null||yearFromText(x)===yearFromText(fname)));if(!n)return null;
+    const b=readSheet(wb.Sheets[n],120,40);
+    for(const r of b){const i=(r||[]).findIndex(c=>/^oee$/i.test(txt(c)));if(i<0)continue;const v=(r.slice(i+1).map(num).find(x=>x!=null));if(v!=null)return v<=1.5?v*100:v}
+    return null};
+  return kpiTable(top>=0?a.slice(top):a,'OEE',fname,'oee',fromSheet);
 }
 function parseFTR(wb,fname){
   const sn=wb.SheetNames.find(n=>/^summary report$/i.test(n.trim()));const a=readSheet(wb.Sheets[sn],200,30);
-  return kpiTable(a,'FTR',fname,'ftr');
+  // fallback: the average of the area FTRs (Brewing, Fermentation, BBT, Packaging, Micro, Finished Product) that have a figure for the month
+  // (the month columns are the same in every section; some section headings are left half filled, so the fullest heading row is used)
+  const fromAreas=m=>{let best={};for(const r of a){const c=monthCols(r);if(Object.keys(c).length>Object.keys(best).length)best=c}
+    const c=best[m];if(c==null)return null;const vals=[];
+    for(const r of a){if(!/^ftr\s/i.test(txt((r||[])[0])))continue;const v=num(r[c]);if(v!=null){const p=v<=1.5?v*100:v;if(p>0&&p<=100)vals.push(p)}}
+    return vals.length>=3?vals.reduce((x,y)=>x+y,0)/vals.length:null};
+  return kpiTable(a,'FTR',fname,'ftr',fromAreas);
 }
 const MON3=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 function parsePM(wb,fname){

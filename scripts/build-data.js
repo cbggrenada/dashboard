@@ -216,6 +216,11 @@ for (const id of Object.keys(months)) {
   if (md.er && md.er.b != null) t.brew = +(100 - md.er.b).toFixed(2);
 }
 
+// Say so when a month's overall FTR / OEE cell was blank or an error and the figure was worked out from the detail instead
+for (const x of parsed) if (!x.skip && x.res.filled && x.res.filled.length) {
+  const how = x.res.type === 'OEE summary' ? "the OEE on that month's own sheet (the Summary sheet's cell is blank)" : 'the average of the area FTRs that have a figure (the Summary Report MTD cell is blank or shows an error)';
+  report.push(`NOTE  ${x.name}: ${x.res.filled.join(', ')} taken from ${how}.`);
+}
 // Say so when the latest month with daily data has no FTR / OEE figure yet (the cell is blank or shows an error such as #DIV/0!)
 for (const [key, label, type] of [['ftrMtd', 'FTR', 'FTR summary'], ['oeeMtd', 'OEE', 'OEE summary']]) {
   for (const id of Object.values(lastMonth)) {
